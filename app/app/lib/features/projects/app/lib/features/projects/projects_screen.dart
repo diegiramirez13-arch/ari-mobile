@@ -19,7 +19,62 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     _load();
   }
 
-  Future<void> _load() async {
+ Future<void> _addProject() async {
+  final titleController = TextEditingController();
+  final descController = TextEditingController();
+
+  final created = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Nuevo proyecto"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: "Título",
+              ),
+            ),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(
+                labelText: "Descripción",
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Crear"),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (created != true) return;
+
+  final title = titleController.text.trim();
+  final desc = descController.text.trim();
+
+  if (title.isEmpty) return;
+
+  final id = DateTime.now().millisecondsSinceEpoch.toString();
+  await repo.add(Project(
+    id: id,
+    title: title,
+    description: desc.isEmpty ? "Sin descripción" : desc,
+  ));
+
+  setState(() {});
+}
     await repo.load();
 
     // Si está vacío, cargamos 2 proyectos iniciales una sola vez.
