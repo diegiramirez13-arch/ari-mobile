@@ -18,7 +18,20 @@ class ProjectsRepository {
     _projects
       ..clear()
       ..addAll(loaded);
-  }
+ Future<void> toggleCompleted(String id) async {
+  final index = _projects.indexWhere((p) => p.id == id);
+  if (index == -1) return;
+
+  final old = _projects[index];
+  _projects[index] = Project(
+    id: old.id,
+    title: old.title,
+    description: old.description,
+    completed: !old.completed,
+  );
+
+  await storage.saveProjects(_projects);
+} }
 
   Future<void> add(Project project) async {
     _projects.add(project);
