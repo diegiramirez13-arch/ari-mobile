@@ -125,15 +125,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               itemCount: projects.length,
               itemBuilder: (context, i) {
                 final p = projects[i];
-                return ListTile(
-                  title: Text(p.title),
-                  subtitle: Text(p.description),
-                  trailing: Icon(
-                    p.completed ? Icons.check_circle : Icons.circle_outlined,
-                  ),
-                );
-              },
-            ),
-    );
-  }
-}
+              return ListTile(
+  title: Text(p.title),
+  subtitle: Text(p.description),
+  trailing: Icon(
+    p.completed ? Icons.check_circle : Icons.circle_outlined,
+  ),
+  onTap: () async {
+    await repo.toggleCompleted(p.id);
+    setState(() {});
+  },
+);
