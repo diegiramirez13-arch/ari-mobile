@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'features/chat/chat_screen.dart';
 
 void main() {
   runApp(const AriApp());
@@ -12,14 +13,8 @@ class AriApp extends StatelessWidget {
     return MaterialApp(
       title: 'ARI',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Text(
-            'ARI está vivo',
-            style: TextStyle(fontSize: 24),
-          ),
-        ),
-      ),
+      theme: ThemeData.dark(),
+      home: const ChatScreen(),
     );
   }
 }
