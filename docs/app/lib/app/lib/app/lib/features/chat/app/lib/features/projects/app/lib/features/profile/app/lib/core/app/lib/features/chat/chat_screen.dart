@@ -1,4 +1,4 @@
-
+import '../projects/projects_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'message.dart';
@@ -43,7 +43,21 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("ARI")),
+      appBar: AppBar(
+  title: const Text("ARI"),
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.folder_open),
+      tooltip: "Proyectos",
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProjectsScreen()),
+        );
+      },
+    ),
+  ],
+),
       body: Column(
         children: [
           Expanded(
