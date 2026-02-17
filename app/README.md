@@ -1,4 +1,3 @@
-# ARI Mobile App
+# App Flutter ARI
 
-Carpeta principal de la aplicación móvil (Flutter).
-Aquí irá el código de la app ARI.
+Este es el directorio de la aplicación Flutter.

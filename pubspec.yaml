@@ -1,0 +1,65 @@
+name: ari_mobile
+description: ARI - Asistente de Inteligencia Aplicada. App mobile para convertir ideas en acciones concretas.
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.0.0
+  flutter: ^3.16.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Persistencia local
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.0
+
+  # State management & architecture
+  provider: ^6.1.0
+  riverpod: ^2.4.0
+  flutter_riverpod: ^2.4.0
+  get_it: ^7.6.0
+
+  # HTTP & networking
+  dio: ^5.4.0
+
+  # Firebase (preparado para paso 2)
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.15.0
+  cloud_firestore: ^4.14.0
+
+  # UI & Design
+  flutter_svg: ^2.0.0
+  google_fonts: ^6.1.0
+
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.0.0
+
+  # Debugging & Analytics (opcional)
+  logger: ^2.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.6
+
+flutter:
+  uses-material-design: true
+
+  # Assets (preparado para futuros recursos)
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  # Fonts (preparado para Google Fonts)
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
