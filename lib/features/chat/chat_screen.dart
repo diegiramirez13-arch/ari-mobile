@@ -5,15 +5,41 @@ import '../../core/providers/ai_provider.dart';
 import '../profile/profile_screen.dart';
 import '../projects/projects_screen.dart';
 
-class ChatScreen extends ConsumerWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends ConsumerState<ChatScreen> {
+  final TextEditingController _textController = TextEditingController();
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage() {
+    final text = _textController.text;
+    if (text.trim().isEmpty) return;
+
+    ref.read(chatControllerProvider.notifier).sendMessage(text);
+    _textController.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(chatControllerProvider);
-    final hasAI = ref.watch(hasAIProvider);
     final ctrl = ref.read(chatControllerProvider.notifier);
-    final textCtrl = TextEditingController();
+
+    ref.listen<String?>(chatErrorProvider, (previous, next) {
+      if (next != null && next != previous) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next)));
+        ctrl.clearError();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -25,8 +51,8 @@ class ChatScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: state.isProMode
-                    ? Colors.amber.withOpacity(0.2)
-                    : Colors.grey.withOpacity(0.2),
+                    ? Colors.amber.withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: state.isProMode ? Colors.amber : Colors.grey,
@@ -43,16 +69,17 @@ class ChatScreen extends ConsumerWidget {
           ],
         ),
         actions: [
-          if (hasAI)
-            IconButton(
-              icon: Icon(
-                state.isProMode ? Icons.bolt : Icons.bolt_outlined,
-                color: state.isProMode ? Colors.amber : null,
-              ),
-              onPressed: ctrl.togglePro,
+          IconButton(
+            icon: Icon(
+              state.isProMode ? Icons.bolt : Icons.bolt_outlined,
+              color: state.isProMode ? Colors.amber : null,
             ),
+            tooltip: 'Cambiar modo',
+            onPressed: ctrl.toggleMode,
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
+            tooltip: 'Limpiar chat',
             onPressed: () => showDialog(
               context: context,
               builder: (_) => AlertDialog(
@@ -64,7 +91,7 @@ class ChatScreen extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      ctrl.clear();
+                      ctrl.clearChat();
                       Navigator.pop(context);
                     },
                     child: const Text('Limpiar'),
@@ -75,6 +102,7 @@ class ChatScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.person_outline),
+            tooltip: 'Perfil',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ProfileScreen()),
@@ -82,6 +110,7 @@ class ChatScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.folder_open),
+            tooltip: 'Proyectos',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ProjectsScreen()),
@@ -91,13 +120,13 @@ class ChatScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          if (!hasAI)
+          if (!state.canSwitchToPro)
             Container(
               width: double.infinity,
-              color: Colors.orange.withOpacity(0.2),
+              color: Colors.orange.withValues(alpha: 0.2),
               padding: const EdgeInsets.all(12),
               child: const Text(
-                '⚠️ Modo IA no disponible. Configura OPENAI_API_KEY',
+                '⚠️ Modo IA no disponible. Configurá OPENAI_API_KEY',
                 style: TextStyle(color: Colors.orange, fontSize: 12),
               ),
             ),
@@ -106,11 +135,11 @@ class ChatScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               itemCount: state.messages.length,
               itemBuilder: (_, i) {
-                final m = state.messages[i];
-                final isUser = m.role == 'user';
+                final message = state.messages[i];
                 return Align(
-                  alignment:
-                      isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: message.isUser
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(
@@ -118,11 +147,15 @@ class ChatScreen extends ConsumerWidget {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: isUser ? Colors.blue.shade700 : Colors.grey.shade800,
+                      color: message.isUser
+                          ? Colors.blue.shade700
+                          : message.isError
+                              ? Colors.red.shade700
+                              : Colors.grey.shade800,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      m.content,
+                      message.content,
                       style: const TextStyle(color: Colors.white),
                     ),
                   ),
@@ -155,7 +188,7 @@ class ChatScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: textCtrl,
+                    controller: _textController,
                     decoration: InputDecoration(
                       hintText: 'Escribí tu mensaje...',
                       border: OutlineInputBorder(
@@ -169,25 +202,13 @@ class ChatScreen extends ConsumerWidget {
                         vertical: 14,
                       ),
                     ),
-                    onSubmitted: (t) {
-                      if (t.isNotEmpty) {
-                        ctrl.send(t);
-                        textCtrl.clear();
-                      }
-                    },
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 const SizedBox(width: 8),
                 FloatingActionButton(
                   mini: true,
-                  onPressed: state.isLoading
-                      ? null
-                      : () {
-                          if (textCtrl.text.isNotEmpty) {
-                            ctrl.send(textCtrl.text);
-                            textCtrl.clear();
-                          }
-                        },
+                  onPressed: state.isLoading ? null : _sendMessage,
                   child: const Icon(Icons.send),
                 ),
               ],

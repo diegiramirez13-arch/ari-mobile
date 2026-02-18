@@ -1,33 +1,41 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ari_mobile/features/chat/chat_provider.dart';
+import 'package:ari_mobile/core/providers/ai_provider.dart';
 
 void main() {
-  test('chat controller starts with welcome message and appends responses', () {
+  test('chat controller starts with one welcome message', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    final initial = container.read(chatControllerProvider);
-    expect(initial.length, 1);
-    expect(initial.first.isUser, false);
-
-    container.read(chatControllerProvider.notifier).sendMessage('Hola ARI');
-
-    final updated = container.read(chatControllerProvider);
-    expect(updated.length, 3);
-    expect(updated[1].isUser, true);
-    expect(updated[1].text, 'Hola ARI');
-    expect(updated[2].isUser, false);
+    final state = container.read(chatControllerProvider);
+    expect(state.messages.length, 1);
+    expect(state.messages.first.isUser, false);
   });
 
-  test('chat controller sets error when sending empty message', () {
+  test('chat controller appends user and assistant messages in basic mode', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    container.read(chatControllerProvider.notifier).sendMessage('   ');
+    await container.read(chatControllerProvider.notifier).sendMessage('Hola ARI');
 
-    final error = container.read(chatErrorProvider);
-    expect(error, isNotNull);
+    final state = container.read(chatControllerProvider);
+    expect(state.messages.length, 3);
+    expect(state.messages[1].isUser, true);
+    expect(state.messages[1].content, 'Hola ARI');
+    expect(state.messages[2].isUser, false);
+    expect(state.error, isNull);
+  });
+
+  test('toggle mode sets error when no API key is configured', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final notifier = container.read(chatControllerProvider.notifier);
+    notifier.toggleMode();
+
+    final state = container.read(chatControllerProvider);
+    expect(state.mode, ChatMode.basic);
+    expect(state.error, isNotNull);
   });
 }
