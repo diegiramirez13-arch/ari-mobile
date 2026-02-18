@@ -1,9 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_profile_model.dart';
+import '../repositories/profile_repository.dart';
 import 'auth_provider.dart';
 import 'firestore_provider.dart';
 
@@ -14,8 +12,12 @@ final profileControllerProvider =
   ProfileController.new,
 );
 
+final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return ProfileRepository(firestoreService);
+});
+
 class ProfileController extends AsyncNotifier<UserProfileModel?> {
-  static const _cachePrefix = 'profile_cache_';
 
   @override
   Future<UserProfileModel?> build() async {
@@ -30,14 +32,14 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
   Future<UserProfileModel?> _loadProfile(String userId) async {
     ref.read(profileErrorProvider.notifier).state = null;
 
-    final cachedProfile = await _getCachedProfile(userId);
+    final repository = ref.read(profileRepositoryProvider);
+    final cachedProfile = await repository.getCachedProfile(userId);
 
     try {
-      final firestoreService = ref.read(firestoreServiceProvider);
-      final remoteProfile = await firestoreService.getProfile(userId);
+      final remoteProfile = await repository.getRemoteProfile(userId);
 
       if (remoteProfile != null) {
-        await _cacheProfile(userId, remoteProfile);
+        await repository.cacheProfile(userId, remoteProfile);
         return remoteProfile;
       }
 
@@ -85,9 +87,9 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
     ref.read(profileErrorProvider.notifier).state = null;
 
     state = await AsyncValue.guard(() async {
-      await _cacheProfile(userId, profile);
-      final firestoreService = ref.read(firestoreServiceProvider);
-      await firestoreService.saveProfile(userId, profile);
+      final repository = ref.read(profileRepositoryProvider);
+      await repository.cacheProfile(userId, profile);
+      await repository.saveRemoteProfile(userId, profile);
       return profile;
     });
 
@@ -98,23 +100,4 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
     }
   }
 
-  Future<UserProfileModel?> _getCachedProfile(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('$_cachePrefix$userId');
-    if (raw == null || raw.isEmpty) {
-      return null;
-    }
-
-    try {
-      final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      return UserProfileModel.fromMap(decoded);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _cacheProfile(String userId, UserProfileModel profile) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('$_cachePrefix$userId', jsonEncode(profile.toMap()));
-  }
 }
