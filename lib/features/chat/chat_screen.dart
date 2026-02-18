@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../profile/profile_screen.dart';
+import '../../core/providers/profile_provider.dart';
 import '../projects/projects_screen.dart';
 import 'chat_provider.dart';
 
@@ -38,9 +39,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final input = controller.text;
-    ref.read(chatControllerProvider.notifier).sendMessage(input);
+    await ref.read(chatControllerProvider.notifier).sendMessage(input);
     if (input.trim().isNotEmpty) {
       controller.clear();
     }
@@ -54,6 +55,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       appBar: AppBar(
         title: const Text('ARI'),
         actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final isPro = ref.watch(profileControllerProvider).valueOrNull?.isPro ?? false;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Center(
+                  child: Text(
+                    isPro ? 'PRO' : 'CORE',
+                    style: TextStyle(
+                      color: isPro ? Colors.amber : Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.person_outline),
             tooltip: 'Perfil',
@@ -109,6 +127,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   )
                   .toList(),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                const Text('Backend IA: '),
+                const SizedBox(width: 8),
+                DropdownButton<AiProvider>(
+                  value: ref.watch(preferredAiProvider),
+                  items: const [
+                    DropdownMenuItem(
+                      value: AiProvider.openai,
+                      child: Text('OpenAI'),
+                    ),
+                    DropdownMenuItem(
+                      value: AiProvider.mistral,
+                      child: Text('Mistral'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref.read(preferredAiProvider.notifier).state = value;
+                    }
+                  },
+                ),
+              ],
             ),
           ),
           Padding(
