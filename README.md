@@ -21,3 +21,17 @@ Ayudar a usuarios estándar y Pro a organizar tareas, proyectos y decisiones, co
 ## Estado de desarrollo
 - Avance técnico y checklist: `DEVELOPMENT.md`
 - Guía de setup Firebase: `docs/FIREBASE_SETUP.md`
+
+## Stack actual
+- Flutter 3.16+
+- Firebase (Autenticación + Firestore)
+- Provider + Riverpod (Administración de estado)
+- Dio (cliente HTTP)
+- SharedPreferences (almacenamiento local)
+
+## Siguiente comando
+```bash
+flutter pub get
+```
+
+Si falla con `flutter: command not found`, instala Flutter o ejecuta desde un entorno que ya lo tenga en `PATH`.
