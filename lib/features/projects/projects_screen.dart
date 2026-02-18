@@ -1,45 +1,13 @@
 import 'package:flutter/material.dart';
-import 'project.dart';
-import 'projects_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ProjectsScreen extends StatefulWidget {
+import 'project.dart';
+import 'projects_provider.dart';
+
+class ProjectsScreen extends ConsumerWidget {
   const ProjectsScreen({super.key});
 
-  @override
-  State<ProjectsScreen> createState() => _ProjectsScreenState();
-}
-
-class _ProjectsScreenState extends State<ProjectsScreen> {
-  final ProjectsRepository repo = ProjectsRepository();
-  bool loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    await repo.load();
-
-    // Si está vacío, cargamos 2 proyectos iniciales una sola vez.
-    if (repo.getAll().isEmpty) {
-      await repo.add(Project(
-        id: "1",
-        title: "ARI MVP",
-        description: "Construir la primera versión funcional de ARI.",
-      ));
-      await repo.add(Project(
-        id: "2",
-        title: "Argentina IA Pro",
-        description: "Convertir el GPT en servicio monetizable.",
-      ));
-    }
-
-    setState(() => loading = false);
-  }
-
-  Future<void> _addProject() async {
+  Future<void> _addProject(BuildContext context, WidgetRef ref) async {
     final titleController = TextEditingController();
     final descController = TextEditingController();
 
@@ -47,14 +15,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Nuevo proyecto"),
+          title: const Text('Nuevo proyecto'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleController,
                 decoration: const InputDecoration(
-                  labelText: "Título",
+                  labelText: 'Título',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -62,7 +30,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               TextField(
                 controller: descController,
                 decoration: const InputDecoration(
-                  labelText: "Descripción",
+                  labelText: 'Descripción',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -71,51 +39,107 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancelar"),
+              child: const Text('Cancelar'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text("Crear"),
+              child: const Text('Crear'),
             ),
           ],
         );
       },
     );
 
-    if (created == true && titleController.text.isNotEmpty) {
-      await repo.add(Project(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: titleController.text,
-        description: descController.text,
-      ));
-      setState(() {});
+    if (created == true) {
+      await ref.read(projectsControllerProvider.notifier).addProject(
+            title: titleController.text,
+            description: descController.text,
+          );
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final projectsState = ref.watch(projectsControllerProvider);
+    final projectsError = ref.watch(projectsErrorProvider);
+
+    ref.listen<String?>(projectsErrorProvider, (previous, next) {
+      if (next != null && next != previous) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next)),
+        );
+      }
+    });
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Proyectos")),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: repo.getAll().map((p) {
-                return ListTile(
-                  title: Text(p.title),
-                  subtitle: Text(p.description),
-                  trailing: Checkbox(
-                    value: p.completed,
-                    onChanged: (_) => repo.toggleCompleted(p.id).then((_) {
-                      setState(() {});
-                    }),
-                  ),
-                );
-              }).toList(),
-            ),
+      appBar: AppBar(title: const Text('Proyectos')),
+      body: projectsState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => _ProjectsListView(
+          projects: projectsState.value ?? const [],
+          projectsError: projectsError,
+          onToggle: (projectId) {
+            ref
+                .read(projectsControllerProvider.notifier)
+                .toggleProjectCompleted(projectId);
+          },
+        ),
+        data: (projects) => _ProjectsListView(
+          projects: projects,
+          projectsError: projectsError,
+          onToggle: (projectId) {
+            ref
+                .read(projectsControllerProvider.notifier)
+                .toggleProjectCompleted(projectId);
+          },
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addProject,
+        onPressed: () => _addProject(context, ref),
         child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+class _ProjectsListView extends StatelessWidget {
+  final List<Project> projects;
+  final String? projectsError;
+  final ValueChanged<String> onToggle;
+
+  const _ProjectsListView({
+    required this.projects,
+    required this.projectsError,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (projectsError != null)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              projectsError!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        Expanded(
+          child: ListView(
+            children: projects.map((p) {
+              return ListTile(
+                title: Text(p.title),
+                subtitle: Text(p.description),
+                trailing: Checkbox(
+                  value: p.completed,
+                  onChanged: (_) => onToggle(p.id),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }
