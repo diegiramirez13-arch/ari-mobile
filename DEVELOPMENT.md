@@ -31,7 +31,7 @@
 - [x] Crear `profile_repository.dart` para Firestore + cache local (SharedPreferences).
 - [x] Crear `profile_provider.dart` con estado `{data, isLoading, error}`.
 - [x] Crear pantalla de alta/edición de perfil (`lib/features/profile/profile_screen.dart`).
-- [ ] Conectar guardado automático y lectura al iniciar sesión.
+- [x] Conectar guardado automático y lectura al iniciar sesión.
 
 ### Paso 4: Gestión estatal mejorada
 - [ ] Migrar side effects de pantallas a Notifiers/AsyncNotifiers de Riverpod.

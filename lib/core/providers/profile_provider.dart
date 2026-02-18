@@ -100,4 +100,49 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
     }
   }
 
+  Future<void> syncProfileOnLogin() async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      return;
+    }
+
+    ref.read(profileErrorProvider.notifier).state = null;
+    final repository = ref.read(profileRepositoryProvider);
+
+    final cachedProfile = await repository.getCachedProfile(userId);
+
+    try {
+      final remoteProfile = await repository.getRemoteProfile(userId);
+
+      if (remoteProfile != null) {
+        await repository.cacheProfile(userId, remoteProfile);
+        state = AsyncData(remoteProfile);
+        return;
+      }
+
+      if (cachedProfile != null) {
+        await repository.saveRemoteProfile(userId, cachedProfile);
+        state = AsyncData(cachedProfile);
+        return;
+      }
+
+      final now = DateTime.now();
+      final newProfile = UserProfileModel.empty(userId).copyWith(
+        name: 'Usuario',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      await repository.cacheProfile(userId, newProfile);
+      await repository.saveRemoteProfile(userId, newProfile);
+      state = AsyncData(newProfile);
+    } catch (_) {
+      if (cachedProfile != null) {
+        state = AsyncData(cachedProfile);
+      }
+      ref.read(profileErrorProvider.notifier).state =
+          'No se pudo sincronizar el perfil al iniciar sesión.';
+    }
+  }
+
 }
