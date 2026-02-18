@@ -34,10 +34,10 @@
 - [x] Conectar guardado automático y lectura al iniciar sesión.
 
 ### Paso 4: Gestión estatal mejorada
-- [ ] Migrar side effects de pantallas a Notifiers/AsyncNotifiers de Riverpod.
-- [ ] Unificar estado de error con providers dedicados por feature.
-- [ ] Estandarizar estados de carga (`AsyncValue`, `when`, skeletons/spinners).
-- [ ] Añadir tests unitarios de providers críticos.
+- [x] Migrar side effects de pantallas a Notifiers/AsyncNotifiers de Riverpod.
+- [x] Unificar estado de error con providers dedicados por feature.
+- [x] Estandarizar estados de carga (`AsyncValue`, `when`, skeletons/spinners).
+- [x] Añadir tests unitarios de providers críticos.
 
 ### Paso 5: Integración de IA
 - [ ] Crear servicio `ai_service.dart` usando `dio`.
