@@ -1,47 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../profile/profile_screen.dart';
 import '../projects/projects_screen.dart';
-import 'chat_logic.dart';
-import 'message.dart';
+import 'chat_provider.dart';
 
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
-  final ChatLogic logic = ChatLogic();
+class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController controller = TextEditingController();
-  final List<Message> messages = [];
+  late final ProviderSubscription<String?> _errorSubscription;
 
   @override
   void initState() {
     super.initState();
-    messages.add(Message(
-      text: logic.nextMessage(''),
-      isUser: false,
-    ));
+    _errorSubscription = ref.listenManual<String?>(
+      chatErrorProvider,
+      (previous, next) {
+        if (next != null && next != previous && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next)),
+          );
+        }
+      },
+    );
   }
 
-  void sendMessage() {
-    final text = controller.text.trim();
-    if (text.isEmpty) return;
+  @override
+  void dispose() {
+    _errorSubscription.close();
+    controller.dispose();
+    super.dispose();
+  }
 
-    setState(() {
-      messages.add(Message(text: text, isUser: true));
-      messages.add(Message(
-        text: logic.nextMessage(text),
-        isUser: false,
-      ));
+  void _sendMessage() {
+    final input = controller.text;
+    ref.read(chatControllerProvider.notifier).sendMessage(input);
+    if (input.trim().isNotEmpty) {
       controller.clear();
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final messages = ref.watch(chatControllerProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('ARI'),
@@ -124,7 +132,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 const SizedBox(width: 8),
                 FloatingActionButton(
-                  onPressed: sendMessage,
+                  onPressed: _sendMessage,
                   child: const Icon(Icons.send),
                 ),
               ],

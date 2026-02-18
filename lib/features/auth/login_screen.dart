@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/providers/auth_provider.dart';
+
+import 'login_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -12,64 +13,35 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  bool isLoading = false;
-  bool useAnonymous = true;
+  late final ProviderSubscription<String?> _errorSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _errorSubscription = ref.listenManual<String?>(
+      loginErrorProvider,
+      (previous, next) {
+        if (next != null && next != previous && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next)),
+          );
+        }
+      },
+    );
+  }
 
   @override
   void dispose() {
+    _errorSubscription.close();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _loginAnonymously() async {
-    setState(() => isLoading = true);
-    try {
-      final authService = ref.read(authServiceProvider);
-      await authService.signUpAnonymously();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _loginWithEmail() async {
-    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor completa tous campos')),
-      );
-      return;
-    }
-
-    setState(() => isLoading = true);
-    try {
-      final authService = ref.read(authServiceProvider);
-      await authService.signInWithEmail(
-        email: emailController.text,
-        password: passwordController.text,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final loginState = ref.watch(loginControllerProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('ARI'),
@@ -95,11 +67,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
-            if (useAnonymous) ...[
+            if (loginState.useAnonymous) ...[
               ElevatedButton.icon(
-                onPressed: isLoading ? null : _loginAnonymously,
+                onPressed: loginState.isLoading
+                    ? null
+                    : () => ref
+                        .read(loginControllerProvider.notifier)
+                        .loginAnonymously(),
                 icon: const Icon(Icons.login),
-                label: const Text('Empezar sin cuenta'),
+                label: loginState.isLoading
+                    ? const Text('Ingresando...')
+                    : const Text('Empezar sin cuenta'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                   backgroundColor: Colors.blue.shade700,
@@ -107,9 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () {
-                  setState(() => useAnonymous = false);
-                },
+                onPressed: () =>
+                    ref.read(loginControllerProvider.notifier).showEmail(),
                 child: const Text('¿Tienes cuenta? Ingresa aquí'),
               ),
             ] else ...[
@@ -122,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   prefixIcon: const Icon(Icons.email),
                 ),
-                enabled: !isLoading,
+                enabled: !loginState.isLoading,
               ),
               const SizedBox(height: 16),
               TextField(
@@ -135,16 +112,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   prefixIcon: const Icon(Icons.lock),
                 ),
                 obscureText: true,
-                enabled: !isLoading,
+                enabled: !loginState.isLoading,
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: isLoading ? null : _loginWithEmail,
+                onPressed: loginState.isLoading
+                    ? null
+                    : () => ref
+                        .read(loginControllerProvider.notifier)
+                        .loginWithEmail(
+                          email: emailController.text,
+                          password: passwordController.text,
+                        ),
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                   backgroundColor: Colors.blue.shade700,
                 ),
-                child: isLoading
+                child: loginState.isLoading
                     ? const SizedBox(
                         height: 24,
                         width: 24,
@@ -156,9 +140,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () {
-                  setState(() => useAnonymous = true);
-                },
+                onPressed: () =>
+                    ref.read(loginControllerProvider.notifier).showAnonymous(),
                 child: const Text('Volver atrás'),
               ),
             ],
