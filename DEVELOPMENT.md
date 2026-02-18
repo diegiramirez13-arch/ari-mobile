@@ -27,11 +27,11 @@
 ## Plan de ejecución sugerido (Pasos 3, 4 y 5)
 
 ### Paso 3: Función de perfil
-- [ ] Crear `UserProfileModel` (`lib/core/models/user_profile_model.dart`).
-- [ ] Crear `profile_repository.dart` para Firestore + cache local (SharedPreferences).
-- [ ] Crear `profile_provider.dart` con estado `{data, isLoading, error}`.
-- [ ] Crear pantalla de alta/edición de perfil (`lib/features/profile/profile_screen.dart`).
-- [ ] Conectar guardado automático y lectura al iniciar sesión.
+- [x] Crear `UserProfileModel` (`lib/core/models/user_profile_model.dart`).
+- [x] Crear `profile_repository.dart` para Firestore + cache local (SharedPreferences).
+- [x] Crear `profile_provider.dart` con estado `{data, isLoading, error}`.
+- [x] Crear pantalla de alta/edición de perfil (`lib/features/profile/profile_screen.dart`).
+- [x] Conectar guardado automático y lectura al iniciar sesión.
 
 ### Paso 4: Gestión estatal mejorada
 - [ ] Migrar side effects de pantallas a Notifiers/AsyncNotifiers de Riverpod.
