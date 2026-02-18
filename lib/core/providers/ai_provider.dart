@@ -1,36 +1,35 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/environment.dart';
 import '../services/ai_service.dart';
 
-// ============================================
-// CONFIGURACIÓN DE ENTORNO
-// ============================================
+class ChatConfig {
+  final bool hasKey;
+  final bool enableAI;
 
-class AIConfig {
-  static const String apiKey = String.fromEnvironment('OPENAI_API_KEY');
-  static bool get hasKey => apiKey.isNotEmpty;
-
-  // Feature flags por entorno
-  static bool get enableProMode => hasKey;
-  static bool get enableLocalFallback => true;
+  const ChatConfig({required this.hasKey, required this.enableAI});
 }
 
-// ============================================
-// SERVICIO
-// ============================================
+final openAIApiKeyProvider = Provider<String>(
+  (ref) => AppEnvironment.openAIApiKey,
+);
+
+final chatConfigProvider = Provider<ChatConfig>(
+  (ref) => ChatConfig(
+    hasKey: ref.watch(openAIApiKeyProvider).isNotEmpty,
+    enableAI: AppEnvironment.enableAI,
+  ),
+);
 
 final aiServiceProvider = Provider<AIService?>((ref) {
-  if (!AIConfig.hasKey) {
+  final key = ref.watch(openAIApiKeyProvider);
+  if (key.isEmpty) {
     debugPrint('🔧 Modo IA deshabilitado - API key no configurada');
     return null;
   }
-  return AIService(config: const AIServiceConfig(apiKey: AIConfig.apiKey));
+  return AIService(config: AIServiceConfig(apiKey: key));
 });
-
-// ============================================
-// ESTADO UNIFICADO
-// ============================================
 
 enum ChatMode { basic, pro }
 
@@ -61,12 +60,14 @@ class ChatState {
   final bool isLoading;
   final ChatMode mode;
   final String? error;
+  final bool canSwitchToPro;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
     this.mode = ChatMode.basic,
     this.error,
+    this.canSwitchToPro = false,
   });
 
   ChatState copyWith({
@@ -74,36 +75,34 @@ class ChatState {
     bool? isLoading,
     ChatMode? mode,
     String? error,
+    bool? canSwitchToPro,
   }) =>
       ChatState(
         messages: messages ?? this.messages,
         isLoading: isLoading ?? this.isLoading,
         mode: mode ?? this.mode,
         error: error,
+        canSwitchToPro: canSwitchToPro ?? this.canSwitchToPro,
       );
 
   bool get isProMode => mode == ChatMode.pro;
-  bool get canSwitchToPro => AIConfig.enableProMode;
 }
-
-// ============================================
-// CONTROLLER UNIFICADO
-// ============================================
 
 class ChatController extends StateNotifier<ChatState> {
   final Ref _ref;
   AIService? get _ai => _ref.read(aiServiceProvider);
+  bool get _hasAIKey => _ref.read(openAIApiKeyProvider).isNotEmpty;
 
   ChatController(this._ref) : super(const ChatState()) {
     _initialize();
   }
 
   void _initialize() {
-    // Auto-switch a Pro si está disponible (opcional, podés quitar)
-    final initialMode = AIConfig.hasKey ? ChatMode.pro : ChatMode.basic;
+    final initialMode = _hasAIKey ? ChatMode.pro : ChatMode.basic;
 
     state = ChatState(
       mode: initialMode,
+      canSwitchToPro: _hasAIKey,
       messages: [
         ChatMessage(
           id: 'welcome',
@@ -158,7 +157,6 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   Future<String> _generateResponse(String userText) async {
-    // MODO PRO: Usar IA real
     if (state.isProMode && _ai != null) {
       final history = state.messages
           .map((m) => AIMessage(
@@ -179,15 +177,13 @@ class ChatController extends StateNotifier<ChatState> {
       return result.text;
     }
 
-    // MODO BÁSICO: Respuestas deterministas
     return _generateBasicResponse(userText);
   }
 
   String _generateBasicResponse(String userText) {
     final lower = userText.toLowerCase();
-    final step = state.messages.length ~/ 2; // Contador de intercambios
+    final step = state.messages.length ~/ 2;
 
-    // Lógica simple pero útil
     if (lower.contains('hola') || lower.contains('buenas')) {
       return '¡Hola! ¿Qué proyecto querés organizar hoy?';
     }
@@ -206,7 +202,6 @@ class ChatController extends StateNotifier<ChatState> {
       return 'Buenísimo. ¿Para cuándo lo necesitás? Fijemos una fecha.';
     }
 
-    // Respuestas genéricas rotativas
     final generics = [
       'Dale, seguimos. ¿Qué sigue?',
       'Perfecto. ¿Necesitás ayuda con algún paso específico?',
@@ -219,8 +214,7 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   void toggleMode() {
-    if (!AIConfig.enableProMode && state.mode == ChatMode.basic) {
-      // No permitir switch a Pro si no hay API key
+    if (!_hasAIKey && state.mode == ChatMode.basic) {
       state = state.copyWith(
         error: 'Modo Pro no disponible. Configurá OPENAI_API_KEY',
       );
@@ -231,6 +225,7 @@ class ChatController extends StateNotifier<ChatState> {
 
     state = state.copyWith(
       mode: newMode,
+      canSwitchToPro: _hasAIKey,
       messages: [
         ...state.messages,
         ChatMessage(
@@ -253,17 +248,10 @@ class ChatController extends StateNotifier<ChatState> {
   }
 }
 
-// ============================================
-// PROVIDERS PÚBLICOS
-// ============================================
-
 final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>(
   (ref) => ChatController(ref),
 );
 
-final chatConfigProvider = Provider<AIConfig>((ref) => AIConfig());
-
-// Selectores específicos para evitar rebuilds innecesarios
 final chatMessagesProvider = Provider<List<ChatMessage>>(
   (ref) => ref.watch(chatControllerProvider).messages,
 );

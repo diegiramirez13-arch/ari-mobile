@@ -66,10 +66,17 @@ class AIService {
   }
 
   void _initializeClient() {
+    if (config.apiKey.trim().isEmpty) {
+      debugPrint('Error inicializando OpenAI: API key vacía');
+      _client = null;
+      return;
+    }
+
     try {
       _client = OpenAIClient(apiKey: config.apiKey);
     } catch (e) {
       debugPrint('Error inicializando OpenAI: $e');
+      _client = null;
     }
   }
 
