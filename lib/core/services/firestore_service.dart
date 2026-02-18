@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/project_model.dart';
+import '../models/user_profile_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -8,9 +9,10 @@ class FirestoreService {
   static const String usersCollection = 'users';
   static const String projectsCollection = 'projects';
   static const String chatsCollection = 'chats';
+  static const String profileCollection = 'profile';
+  static const String profileDocId = 'data';
 
   // ============ PROJECTS ============
-  
   Future<void> saveProject(String userId, ProjectModel project) async {
     try {
       await _db
@@ -31,9 +33,8 @@ class FirestoreService {
         .doc(userId)
         .collection(projectsCollection)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ProjectModel.fromJson(doc.data()))
-            .toList());
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => ProjectModel.fromJson(doc.data())).toList());
   }
 
   Future<void> deleteProject(String userId, String projectId) async {
@@ -51,7 +52,6 @@ class FirestoreService {
   }
 
   // ============ CHAT HISTORY ============
-  
   Future<void> saveChatMessage(
     String userId,
     String message,
@@ -80,7 +80,36 @@ class FirestoreService {
         .collection(chatsCollection)
         .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => doc.data()).toList());
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  // ============ PROFILE ============
+  Future<UserProfileModel?> getProfile(String userId) async {
+    final doc = await _db
+        .collection(usersCollection)
+        .doc(userId)
+        .collection(profileCollection)
+        .doc(profileDocId)
+        .get();
+
+    if (!doc.exists || doc.data() == null) {
+      return null;
+    }
+
+    return UserProfileModel.fromMap(doc.data()!);
+  }
+
+  Future<void> saveProfile(String userId, UserProfileModel profile) async {
+    try {
+      await _db
+          .collection(usersCollection)
+          .doc(userId)
+          .collection(profileCollection)
+          .doc(profileDocId)
+          .set(profile.toMap());
+    } catch (e) {
+      print('Error guardando perfil: $e');
+      rethrow;
+    }
   }
 }
