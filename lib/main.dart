@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
+import 'core/config/environment.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
 import 'features/chat/chat_screen.dart';
@@ -10,6 +11,7 @@ import 'features/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configureEnvironment();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
