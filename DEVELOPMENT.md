@@ -3,52 +3,62 @@
 ## Sprint 0 - Foundation ✅
 
 ### Paso 1: Dependencies Setup ✅
-- [x] Created pubspec.yaml with all core dependencies
-- [x] Added shared_preferences for local persistence
-- [x] Added Firebase dependencies (firebase_core, firebase_auth, cloud_firestore)
-- [x] Added state management (provider, get_it, riverpod)
-- [x] Added networking (dio)
-- [x] Created assets directory structure
+- [x] Created `pubspec.yaml` with all core dependencies.
+- [x] Added `shared_preferences` for local persistence.
+- [x] Added Firebase dependencies (`firebase_core`, `firebase_auth`, `cloud_firestore`).
+- [x] Added state management dependencies (`provider`, `get_it`, `riverpod`).
+- [x] Added networking (`dio`).
+- [x] Created assets directory structure.
 
 ### Paso 2: Firebase Integration ✅
-- [x] Created AuthService for authentication
-- [x] Created FirestoreService for database
-- [x] Created auth and firestore providers (Riverpod)
-- [x] Updated main.dart with Firebase init
-- [x] Created LoginScreen with anonymous & email auth
-- [x] Created ProjectModel with Firestore serialization
-- [x] Created firebase_options.dart template
-- [x] Created Firebase Setup Guide (docs/FIREBASE_SETUP.md)
-  
-**TODO User:** Run `flutterfire configure` after setting up Firebase project
+- [x] Created `AuthService` for authentication.
+- [x] Created `FirestoreService` for database access.
+- [x] Created auth and firestore providers (Riverpod).
+- [x] Updated `main.dart` with Firebase init.
+- [x] Created `LoginScreen` with anonymous + email auth.
+- [x] Created `ProjectModel` with Firestore serialization.
+- [x] Added `firebase_options.dart` template.
+- [x] Created Firebase setup guide (`docs/FIREBASE_SETUP.md`).
 
-### Paso 3: Profile Feature
-- [ ] Create user profile model
-- [ ] Add profile screen
-- [ ] Persist user data
-
-### Paso 3: Enhanced State Management
-- [ ] Migrate to Riverpod for side effects
-- [ ] Add error handling providers
-- [ ] Add loading states
-
-### Paso 4: Profile Feature
-- [ ] Create user profile model
-- [ ] Add profile screen
-- [ ] Persist user data
-
-### Paso 5: AI Integration
-- [ ] Integrate OpenAI/Mistral API
-- [ ] Create AI chat mode for Pro users
-- [ ] Add prompt engineering for ARI personality
+**TODO Usuario (bloqueante):** correr `flutterfire configure` después de crear el proyecto en Firebase.
 
 ---
 
-## Current Stack
+## Plan de ejecución sugerido (Pasos 3, 4 y 5)
+
+### Paso 3: Función de perfil
+- [ ] Crear `UserProfileModel` (`lib/core/models/user_profile_model.dart`).
+- [ ] Crear `profile_repository.dart` para Firestore + cache local (SharedPreferences).
+- [ ] Crear `profile_provider.dart` con estado `{data, isLoading, error}`.
+- [ ] Crear pantalla de alta/edición de perfil (`lib/features/profile/profile_screen.dart`).
+- [ ] Conectar guardado automático y lectura al iniciar sesión.
+
+### Paso 4: Gestión estatal mejorada
+- [ ] Migrar side effects de pantallas a Notifiers/AsyncNotifiers de Riverpod.
+- [ ] Unificar estado de error con providers dedicados por feature.
+- [ ] Estandarizar estados de carga (`AsyncValue`, `when`, skeletons/spinners).
+- [ ] Añadir tests unitarios de providers críticos.
+
+### Paso 5: Integración de IA
+- [ ] Crear servicio `ai_service.dart` usando `dio`.
+- [ ] Definir contrato para múltiples backends (OpenAI / Mistral).
+- [ ] Crear “modo Pro” en chat con feature flag por usuario.
+- [ ] Añadir prompt base de personalidad ARI y reglas de seguridad.
+- [ ] Persistir historial relevante (resumen, no tokens crudos sensibles).
+
+---
+
+## Stack actual
 - Flutter 3.16+
 - Firebase (Auth + Firestore)
 - Provider + Riverpod (State Management)
-- Dio (HTTP Client)
-- SharedPreferences (Local Storage)
+- Dio (HTTP client)
+- SharedPreferences (almacenamiento local)
 
-## Next: Run flutter pub get
+## Siguiente comando
+
+```bash
+flutter pub get
+```
+
+Si falla con `flutter: command not found`, instala Flutter o ejecuta desde un entorno que ya lo tenga en `PATH`.
