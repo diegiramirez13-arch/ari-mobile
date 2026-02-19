@@ -15,19 +15,24 @@ final openAIApiKeyProvider = Provider<String>(
   (ref) => AppEnvironment.openAIApiKey,
 );
 
-final chatConfigProvider = Provider<ChatConfig>(
-  (ref) => ChatConfig(
-    hasKey: ref.watch(openAIApiKeyProvider).isNotEmpty,
-    enableAI: AppEnvironment.enableAI,
-  ),
-);
+final chatConfigProvider = Provider<ChatConfig>((ref) {
+  final key = ref.watch(openAIApiKeyProvider);
+  final enableAI = AppEnvironment.enableAI;
+  return ChatConfig(
+    hasKey: enableAI && key.isNotEmpty,
+    enableAI: enableAI,
+  );
+});
 
 final aiServiceProvider = Provider<AIService?>((ref) {
+  final config = ref.watch(chatConfigProvider);
   final key = ref.watch(openAIApiKeyProvider);
-  if (key.isEmpty) {
+
+  if (!config.enableAI || key.isEmpty) {
     debugPrint('🔧 Modo IA deshabilitado - API key no configurada');
     return null;
   }
+
   return AIService(config: AIServiceConfig(apiKey: key));
 });
 
@@ -56,6 +61,7 @@ class ChatMessage {
 }
 
 class ChatState {
+  static const _noError = Object();
   final List<ChatMessage> messages;
   final bool isLoading;
   final ChatMode mode;
@@ -74,14 +80,14 @@ class ChatState {
     List<ChatMessage>? messages,
     bool? isLoading,
     ChatMode? mode,
-    String? error,
+    Object? error = _noError,
     bool? canSwitchToPro,
   }) =>
       ChatState(
         messages: messages ?? this.messages,
         isLoading: isLoading ?? this.isLoading,
         mode: mode ?? this.mode,
-        error: error,
+        error: identical(error, _noError) ? this.error : error as String?,
         canSwitchToPro: canSwitchToPro ?? this.canSwitchToPro,
       );
 
@@ -91,7 +97,7 @@ class ChatState {
 class ChatController extends StateNotifier<ChatState> {
   final Ref _ref;
   AIService? get _ai => _ref.read(aiServiceProvider);
-  bool get _hasAIKey => _ref.read(openAIApiKeyProvider).isNotEmpty;
+  bool get _hasAIKey => _ref.read(chatConfigProvider).hasKey;
 
   ChatController(this._ref) : super(const ChatState()) {
     _initialize();
