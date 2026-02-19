@@ -21,14 +21,25 @@ jobs:
 
       - name: Resolve OPENAI key by environment
         shell: bash
+        env:
+          OPENAI_API_KEY_PROD: ${{ secrets.OPENAI_API_KEY_PROD }}
+          OPENAI_API_KEY_QA: ${{ secrets.OPENAI_API_KEY_QA }}
+          OPENAI_API_KEY_LEGACY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY_PROD || secrets.OPENAI_API_KEY }}" >> "$GITHUB_ENV"
-            echo "APP_ENV=prod" >> "$GITHUB_ENV"
+            SELECTED_KEY="${OPENAI_API_KEY_PROD:-}"
+            APP_ENV_VALUE="prod"
           else
-            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY_QA || secrets.OPENAI_API_KEY }}" >> "$GITHUB_ENV"
-            echo "APP_ENV=qa" >> "$GITHUB_ENV"
+            SELECTED_KEY="${OPENAI_API_KEY_QA:-}"
+            APP_ENV_VALUE="qa"
           fi
+
+          if [[ -z "${SELECTED_KEY}" ]]; then
+            SELECTED_KEY="${OPENAI_API_KEY_LEGACY:-}"
+          fi
+
+          echo "OPENAI_API_KEY=${SELECTED_KEY}" >> "$GITHUB_ENV"
+          echo "APP_ENV=${APP_ENV_VALUE}" >> "$GITHUB_ENV"
 
       - name: Detect Flutter platforms in repo
         id: platforms
