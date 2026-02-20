@@ -19,6 +19,8 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 
 class ProfileController extends AsyncNotifier<UserProfileModel?> {
 
+  bool _isActiveUser(String userId) => ref.read(currentUserIdProvider) == userId;
+
   @override
   Future<UserProfileModel?> build() async {
     final userId = ref.watch(currentUserIdProvider);
@@ -110,18 +112,30 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
     final repository = ref.read(profileRepositoryProvider);
 
     final cachedProfile = await repository.getCachedProfile(userId);
+    if (!_isActiveUser(userId)) {
+      return;
+    }
 
     try {
       final remoteProfile = await repository.getRemoteProfile(userId);
+      if (!_isActiveUser(userId)) {
+        return;
+      }
 
       if (remoteProfile != null) {
         await repository.cacheProfile(userId, remoteProfile);
+        if (!_isActiveUser(userId)) {
+          return;
+        }
         state = AsyncData(remoteProfile);
         return;
       }
 
       if (cachedProfile != null) {
         await repository.saveRemoteProfile(userId, cachedProfile);
+        if (!_isActiveUser(userId)) {
+          return;
+        }
         state = AsyncData(cachedProfile);
         return;
       }
@@ -135,8 +149,14 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
 
       await repository.cacheProfile(userId, newProfile);
       await repository.saveRemoteProfile(userId, newProfile);
+      if (!_isActiveUser(userId)) {
+        return;
+      }
       state = AsyncData(newProfile);
     } catch (_) {
+      if (!_isActiveUser(userId)) {
+        return;
+      }
       if (cachedProfile != null) {
         state = AsyncData(cachedProfile);
       }
