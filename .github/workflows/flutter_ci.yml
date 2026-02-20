@@ -56,12 +56,11 @@ jobs:
       - name: Run unit/widget tests (exclude integration)
         run: |
           flutter test test/core test/features \
-            --dart-define=ENV=${APP_ENV} \
-            --dart-define=OPENAI_API_KEY=${OPENAI_API_KEY}
+            --dart-define=ENV=${APP_ENV}
 
       - name: Run integration tests
         if: false
-        run: flutter test test/integration --dart-define=ENV=${APP_ENV} --dart-define=OPENAI_API_KEY=${OPENAI_API_KEY}
+        run: flutter test test/integration --dart-define=ENV=${APP_ENV}
 
       - name: Build APK (smoke test)
         if: steps.platforms.outputs.has_android == 'true'

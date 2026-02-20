@@ -127,11 +127,12 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+    final normalizedText = text.trim();
+    if (normalizedText.isEmpty) return;
 
     final userMsg = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: text.trim(),
+      content: normalizedText,
       isUser: true,
     );
 
@@ -142,7 +143,7 @@ class ChatController extends StateNotifier<ChatState> {
     );
 
     try {
-      final response = await _generateResponse(text);
+      final response = await _generateResponse(normalizedText);
 
       final assistantMsg = ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
