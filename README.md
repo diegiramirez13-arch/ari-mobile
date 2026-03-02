@@ -17,3 +17,7 @@ Ayudar a usuarios estándar y Pro a organizar tareas, proyectos y decisiones, co
 - Simple > complejo  
 - Acción > charla  
 - Evolutivo > perfecto desde el día 1
+
+## Estado de desarrollo
+- Avance técnico y checklist: `DEVELOPMENT.md`
+- Guía de setup Firebase: `docs/FIREBASE_SETUP.md`
