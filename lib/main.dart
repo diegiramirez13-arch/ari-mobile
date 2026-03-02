@@ -1,18 +1,24 @@
-import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'firebase_options.dart';
+
+import 'core/config/environment.dart';
 import 'core/providers/auth_provider.dart';
-import 'features/chat/chat_screen.dart';
+import 'core/providers/profile_provider.dart';
 import 'features/auth/login_screen.dart';
+import 'features/chat/chat_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  configureEnvironment();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   runApp(
     const ProviderScope(
       child: AriApp(),
@@ -42,12 +48,44 @@ class AriApp extends StatelessWidget {
   }
 }
 
-// Widget que verifica autenticación
-class AuthWrapper extends ConsumerWidget {
+class AuthWrapper extends ConsumerStatefulWidget {
   const AuthWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends ConsumerState<AuthWrapper> {
+  String? _lastSyncedUserId;
+  late final ProviderSubscription<AsyncValue<User?>> _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _authSubscription =
+        ref.listenManual<AsyncValue<User?>>(authStateProvider, (previous, next) {
+      final userId = next.value?.uid;
+
+      if (userId != null && userId != _lastSyncedUserId) {
+        _lastSyncedUserId = userId;
+        ref.read(profileControllerProvider.notifier).syncProfileOnLogin();
+      }
+
+      if (userId == null) {
+        _lastSyncedUserId = null;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
 
     return authState.when(
@@ -69,7 +107,6 @@ class AuthWrapper extends ConsumerWidget {
   }
 }
 
-// Splash screen mientras se carga Firebase
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
