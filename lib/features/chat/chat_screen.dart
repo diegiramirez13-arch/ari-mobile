@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/models/chat_config.dart';
 import '../../core/providers/ai_provider.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -13,11 +12,23 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _textController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -25,10 +36,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final state = ref.watch(chatControllerProvider);
     final controller = ref.read(chatControllerProvider.notifier);
 
+    ref.listen(chatControllerProvider, (_, __) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    });
+
     return Scaffold(
-      appBar: _buildAppBar(state.config, controller),
+      appBar: _buildAppBar(controller),
       body: Column(
         children: [
+          if (state.error != null)
+            MaterialBanner(
+              content: Text(state.error!),
+              actions: [
+                TextButton(
+                  onPressed: controller.clearError,
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
           Expanded(child: _buildMessageList(state)),
           if (state.isLoading) const LinearProgressIndicator(),
           _buildInputField(controller),
@@ -37,17 +62,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(
-    ChatConfig config,
-    ChatController controller,
-  ) {
+  PreferredSizeWidget _buildAppBar(ChatController controller) {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('ARI', style: TextStyle(fontWeight: FontWeight.bold)),
           Text(
-            config.isProMode ? 'Modo Pro (GPT-4)' : 'Modo Básico',
+            controller.modeExplanation,
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
           ),
         ],
@@ -73,11 +95,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     return ListView.builder(
-      reverse: true,
+      controller: _scrollController,
       padding: const EdgeInsets.all(16),
       itemCount: state.messages.length,
       itemBuilder: (context, index) {
-        final message = state.messages.reversed.toList()[index];
+        final message = state.messages[index];
         return _buildMessageBubble(message);
       },
     );

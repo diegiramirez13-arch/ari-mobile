@@ -1,17 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chat_config.dart';
+import '../models/chat_error.dart';
 import '../services/ai_service.dart';
+
+// Configuración del chat
+final chatConfigProvider = Provider<ChatConfig>((ref) {
+  return ChatConfig.fromEnvironment();
+});
 
 // Provider del servicio
 final aiServiceProvider = Provider<AIService>((ref) {
   final config = ref.watch(chatConfigProvider);
   return AIService(config);
-});
-
-// Configuración del chat
-final chatConfigProvider = Provider<ChatConfig>((ref) {
-  return ChatConfig.fromEnvironment();
 });
 
 class Message {
@@ -71,10 +72,13 @@ class ChatController extends StateNotifier<ChatState> {
   ChatController(this._aiService, ChatConfig config)
       : super(ChatState(config: config));
 
+  String get modeExplanation => state.config.isProMode
+      ? 'Modo Pro activo (${state.config.model})'
+      : 'Modo Básico - agregá OPENAI_API_KEY en build';
+
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    // Agregar mensaje del usuario
     final userMessage = Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: text,
@@ -88,23 +92,6 @@ class ChatController extends StateNotifier<ChatState> {
       error: null,
     );
 
-    // Modo Básico (sin IA)
-    if (!state.config.isProMode) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final botMessage = Message(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        content: 'Modo básico activo. Configurá OPENAI_API_KEY para usar IA.',
-        isUser: false,
-        timestamp: DateTime.now(),
-      );
-      state = state.copyWith(
-        messages: [...state.messages, botMessage],
-        isLoading: false,
-      );
-      return;
-    }
-
-    // Modo Pro (con OpenAI)
     try {
       final response = await _aiService.sendMessage(text);
       final botMessage = Message(
@@ -118,11 +105,20 @@ class ChatController extends StateNotifier<ChatState> {
         isLoading: false,
       );
     } catch (e) {
+      final normalized = _mapError(e);
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: normalized.message,
       );
     }
+  }
+
+  ChatError _mapError(Object error) {
+    final raw = error.toString().toLowerCase();
+    if (raw.contains('socket') || raw.contains('network')) {
+      return const NetworkError();
+    }
+    return ApiError(error.toString());
   }
 
   void clearChat() {
@@ -132,13 +128,6 @@ class ChatController extends StateNotifier<ChatState> {
 
   void clearError() {
     state = state.copyWith(error: null);
-  }
-
-  void toggleMode() {
-    state = state.copyWith(
-      error:
-          'El modo está definido por OPENAI_API_KEY. Configurá esa variable para activar/desactivar Pro.',
-    );
   }
 }
 
