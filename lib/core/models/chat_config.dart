@@ -10,12 +10,14 @@ class ChatConfig {
     this.model = 'gpt-4o-mini',
     this.temperature = 0.7,
     this.maxTokens = 1000,
-    this.isProMode = true,
+    required this.isProMode,
   });
 
-  factory ChatConfig.fromEnvironment({String? apiKey}) {
-    final resolvedKey = apiKey ?? Environment.openAiApiKey;
-    return ChatConfig(isProMode: resolvedKey.isNotEmpty);
+  factory ChatConfig.fromEnvironment() {
+    return ChatConfig(
+      isProMode: Environment.isProMode,
+      // Opcional: leer otros valores de environment si los agregás
+    );
   }
 
   bool get hasKey => isProMode;

@@ -4,20 +4,21 @@ import '../config/environment.dart';
 import '../models/chat_config.dart';
 
 class AIService {
-  final OpenAIClient? _client;
   final ChatConfig _config;
-  final List<Map<String, dynamic>> _history = [];
+  OpenAIClient? _client;
+  final List<Map<String, String>> _history = [];
   static const int _maxHistory = 6;
 
-  AIService(this._config)
-      : _client = _config.isProMode
-            ? OpenAIClient(apiKey: Environment.openAiApiKey)
-            : null;
+  AIService(this._config) {
+    if (_config.isProMode) {
+      _client = OpenAIClient(apiKey: Environment.openAiApiKey);
+    }
+  }
 
-  bool get isAvailable => _config.isProMode && _client != null;
+  bool get isAvailable => _client != null;
 
   Future<String> sendMessage(String message) async {
-    if (!_config.isProMode) {
+    if (!isAvailable) {
       return _basicResponse(message);
     }
 
@@ -29,20 +30,14 @@ class AIService {
           model: ChatCompletionModel.modelId(_config.model),
           messages: [
             const ChatCompletionMessage.system(
-              content: 'Sos ARI, un asistente de productividad. '
-                  'Respondé en español rioplatense, máximo 3 oraciones, '
-                  'de forma directa y útil.',
+              content: 'Sos ARI, asistente de productividad. '
+                  'Respondé en español rioplatense, máximo 3 oraciones.',
             ),
-            ..._history.map((h) {
-              final role = h['role'] as String;
-              final content = h['content'] as String;
-              if (role == 'assistant') {
-                return ChatCompletionMessage.assistant(content: content);
-              }
-              return ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string(content),
-              );
-            }),
+            ..._history.map(
+              (h) => ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string(h['content']!),
+              ),
+            ),
           ],
           temperature: _config.temperature,
           maxTokens: _config.maxTokens,
@@ -50,20 +45,18 @@ class AIService {
       );
 
       final content = response.choices.first.message.content;
-      final result = content ?? 'No entendí, ¿podés repetir?';
-      _addToHistory('assistant', result);
-      return result;
+      final reply = content ?? 'No entendí, ¿podés repetir?';
+
+      _addToHistory('assistant', reply);
+      return reply;
     } catch (e) {
       return 'Error: $e';
     }
   }
 
-  String _basicResponse(String userText) {
-    final lower = userText.toLowerCase();
-    if (lower.contains('hola') || lower.contains('buenas')) {
-      return '¡Hola! Estoy en modo básico. Configurá OPENAI_API_KEY para activar Pro.';
-    }
-    return 'Modo básico activo. Configurá OPENAI_API_KEY para usar IA.';
+  String _basicResponse(String message) {
+    return 'Modo básico activo. Recibí: "$message"\n'
+        'Configurá OPENAI_API_KEY para respuestas con IA.';
   }
 
   void _addToHistory(String role, String content) {
@@ -75,7 +68,5 @@ class AIService {
 
   void clearHistory() => _history.clear();
 
-  void dispose() {
-    _client?.close();
-  }
+  void dispose() => _client?.close();
 }
