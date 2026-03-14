@@ -3,6 +3,8 @@
 
 set -e
 
+cd app
+
 echo "🔍 Analyzing..."
 flutter analyze --fatal-infos
 

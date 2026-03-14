@@ -3,6 +3,8 @@
 
 set -e
 
+cd app
+
 echo "🚀 Build modo BÁSICO (sin key)..."
 flutter run --dart-define=ENV=dev --observatory-port=0 &
 PID=$!

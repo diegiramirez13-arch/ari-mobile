@@ -1,9 +1,17 @@
 name: Flutter CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, develop, test/**]
+  pull_request:
+    branches: [main, develop]
+
+defaults:
+  run:
+    working-directory: ./app
 
 jobs:
-  quality:
+  analyze-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,8 +28,5 @@ jobs:
       - name: Analyze
         run: flutter analyze --fatal-infos
 
-      - name: Run tests
+      - name: Test
         run: flutter test --coverage
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3

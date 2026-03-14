@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+cd app
+
 echo "🔍 Verificando ARI..."
 
 echo "📦 Pub get..."
