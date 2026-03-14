@@ -1,41 +1,48 @@
+import 'package:ari_mobile/core/models/chat_config.dart';
+import 'package:ari_mobile/core/providers/ai_provider.dart';
+import 'package:ari_mobile/core/services/ai_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ari_mobile/core/providers/ai_provider.dart';
+class _FakeAIService extends AIService {
+  @override
+  Future<String> sendMessage(String message) async => 'Respuesta fake: $message';
+
+  @override
+  void clearHistory() {}
+}
 
 void main() {
-  test('chat controller starts with one welcome message', () {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-
-    final state = container.read(chatControllerProvider);
-    expect(state.messages.length, 1);
-    expect(state.messages.first.isUser, false);
-  });
-
-  test('chat controller appends user and assistant messages in basic mode', () async {
-    final container = ProviderContainer();
+  test('chat controller en básico agrega user + bot', () async {
+    final container = ProviderContainer(
+      overrides: [
+        chatConfigProvider.overrideWithValue(const ChatConfig(isProMode: false)),
+      ],
+    );
     addTearDown(container.dispose);
 
     await container.read(chatControllerProvider.notifier).sendMessage('Hola ARI');
 
     final state = container.read(chatControllerProvider);
-    expect(state.messages.length, 3);
-    expect(state.messages[1].isUser, true);
-    expect(state.messages[1].content, 'Hola ARI');
-    expect(state.messages[2].isUser, false);
+    expect(state.messages.length, 2);
+    expect(state.messages.first.isUser, true);
+    expect(state.messages.last.isUser, false);
     expect(state.error, isNull);
   });
 
-  test('toggle mode sets error when no API key is configured', () {
-    final container = ProviderContainer();
+  test('chat controller en pro usa AIService', () async {
+    final container = ProviderContainer(
+      overrides: [
+        chatConfigProvider.overrideWithValue(const ChatConfig(isProMode: true)),
+        aiServiceProvider.overrideWithValue(_FakeAIService()),
+      ],
+    );
     addTearDown(container.dispose);
 
-    final notifier = container.read(chatControllerProvider.notifier);
-    notifier.toggleMode();
+    await container.read(chatControllerProvider.notifier).sendMessage('Hola ARI');
 
     final state = container.read(chatControllerProvider);
-    expect(state.mode, ChatMode.basic);
-    expect(state.error, isNotNull);
+    expect(state.messages.length, 2);
+    expect(state.messages.last.content, 'Respuesta fake: Hola ARI');
   });
 }

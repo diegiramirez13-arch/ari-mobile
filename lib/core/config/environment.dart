@@ -1,50 +1,29 @@
-enum Environment { dev, qa, prod }
+import 'package:flutter/foundation.dart';
 
-class AppEnvironment {
-  static Environment _current = Environment.dev;
+class Environment {
+  // API Keys - Inyectadas en tiempo de compilación
+  static const openAiApiKey = String.fromEnvironment('OPENAI_API_KEY');
 
-  static Environment get current => _current;
+  // Feature Flags
+  static bool get isProMode => openAiApiKey.isNotEmpty;
 
-  static void setEnvironment(Environment env) {
-    _current = env;
-  }
+  // Entorno
+  static const env = String.fromEnvironment('ENV', defaultValue: 'dev');
+  static bool get isDev => env == 'dev';
+  static bool get isProd => env == 'prod';
 
-  // API Keys por fuente
-  static String get openAIApiKey {
-    // 1. Intentar desde --dart-define (producción)
-    const fromDefine = String.fromEnvironment('OPENAI_API_KEY');
-    if (fromDefine.isNotEmpty) return fromDefine;
-
-    // 2. Fallback para desarrollo (NO usar en prod)
-    if (_current == Environment.dev) {
-      // Opcional: leer de archivo local .env.dev
-      // return dotenv.env['OPENAI_API_KEY'] ?? '';
+  // Validación
+  static void validate() {
+    if (isProd && openAiApiKey.isEmpty) {
+      throw Exception('OPENAI_API_KEY requerida en producción');
     }
 
-    return '';
+    if (isDev) {
+      debugPrint('🔧 Environment: $env | Pro mode: $isProMode');
+    }
   }
-
-  static bool get hasOpenAIKey => openAIApiKey.isNotEmpty;
-
-  // Feature flags
-  static bool get enableAI => hasOpenAIKey;
-  static bool get enableAnalytics => _current == Environment.prod;
-  static bool get enableDebugLogs => _current == Environment.dev;
 }
 
-// Helper para inicializar desde main
 void configureEnvironment() {
-  // Detectar por variables de entorno del sistema o compilar-mode
-  const env = String.fromEnvironment('ENV', defaultValue: 'dev');
-
-  switch (env) {
-    case 'prod':
-      AppEnvironment.setEnvironment(Environment.prod);
-      break;
-    case 'qa':
-      AppEnvironment.setEnvironment(Environment.qa);
-      break;
-    default:
-      AppEnvironment.setEnvironment(Environment.dev);
-  }
+  Environment.validate();
 }

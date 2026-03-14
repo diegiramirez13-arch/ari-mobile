@@ -1,98 +1,66 @@
+import 'package:ari_mobile/core/models/chat_config.dart';
 import 'package:ari_mobile/core/providers/ai_provider.dart';
+import 'package:ari_mobile/core/services/ai_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _FakeAIService extends AIService {
+  bool cleared = false;
+
+  @override
+  Future<String> sendMessage(String message) async => 'ok';
+
+  @override
+  void clearHistory() {
+    cleared = true;
+  }
+}
+
 void main() {
   group('ChatController', () {
-    late ProviderContainer container;
-    late ChatController controller;
+    test('inicializa con config provista por chatConfigProvider', () {
+      final container = ProviderContainer(
+        overrides: [
+          chatConfigProvider.overrideWithValue(const ChatConfig(isProMode: false)),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    setUp(() {
-      container = ProviderContainer();
-      controller = container.read(chatControllerProvider.notifier);
-    });
-
-    tearDown(() {
-      container.dispose();
-    });
-
-    test('debe inicializar con mensaje de bienvenida', () {
       final state = container.read(chatControllerProvider);
-
-      expect(state.messages.length, 1);
-      expect(state.messages.first.isUser, false);
+      expect(state.config.isProMode, false);
+      expect(state.messages, isEmpty);
       expect(state.isLoading, false);
     });
 
-    test('debe agregar mensaje de usuario al enviar', () async {
-      await controller.sendMessage('Hola test');
-
-      final state = container.read(chatControllerProvider);
-      expect(state.messages.length, 3);
-      expect(state.messages[1].isUser, true);
-      expect(state.messages[1].content, 'Hola test');
-    });
-
-    test('debe ignorar mensajes vacíos', () async {
-      final initialLength = container.read(chatControllerProvider).messages.length;
+    test('ignora mensajes vacíos', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(chatControllerProvider.notifier);
 
       await controller.sendMessage('');
       await controller.sendMessage('   ');
 
       final state = container.read(chatControllerProvider);
-      expect(state.messages.length, initialLength);
+      expect(state.messages, isEmpty);
     });
 
-    test('debe cambiar modo correctamente con API key', () {
-      final withKeyContainer = ProviderContainer(
+    test('clearChat limpia mensajes y llama clearHistory', () async {
+      final fake = _FakeAIService();
+      final container = ProviderContainer(
         overrides: [
-          openAIApiKeyProvider.overrideWithValue('test-key'),
+          chatConfigProvider.overrideWithValue(const ChatConfig(isProMode: true)),
+          aiServiceProvider.overrideWithValue(fake),
         ],
       );
-      addTearDown(withKeyContainer.dispose);
-      final withKeyController = withKeyContainer.read(chatControllerProvider.notifier);
-      final initialMode = withKeyContainer.read(chatControllerProvider).mode;
+      addTearDown(container.dispose);
+      final controller = container.read(chatControllerProvider.notifier);
 
-      withKeyController.toggleMode();
-
-      final newState = withKeyContainer.read(chatControllerProvider);
-      expect(newState.mode, isNot(initialMode));
-      expect(newState.messages.last.content, contains('Modo cambiado'));
-    });
-
-    test('debe limpiar chat correctamente', () async {
-      await controller.sendMessage('Test message');
+      await controller.sendMessage('hola');
       controller.clearChat();
 
       final state = container.read(chatControllerProvider);
-      expect(state.messages.length, 1);
-      expect(state.error, null);
-      expect(state.isLoading, false);
-    });
-  });
-
-  group('ChatState', () {
-    test('debe identificar modo Pro correctamente', () {
-      const proState = ChatState(mode: ChatMode.pro);
-      const basicState = ChatState(mode: ChatMode.basic);
-
-      expect(proState.isProMode, true);
-      expect(basicState.isProMode, false);
-    });
-
-    test('debe copiar correctamente', () {
-      const original = ChatState(
-        messages: [],
-        isLoading: false,
-        mode: ChatMode.basic,
-        error: null,
-      );
-
-      final copy = original.copyWith(isLoading: true, error: 'test');
-
-      expect(copy.isLoading, true);
-      expect(copy.error, 'test');
-      expect(copy.mode, original.mode);
+      expect(state.messages, isEmpty);
+      expect(fake.cleared, true);
     });
   });
 }
