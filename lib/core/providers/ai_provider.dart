@@ -1,151 +1,117 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/environment.dart';
+import '../models/chat_config.dart';
 import '../services/ai_service.dart';
 
-class ChatConfig {
-  final bool hasKey;
-  final bool enableAI;
+// Provider del servicio
+final aiServiceProvider = Provider<AIService>((ref) => AIService());
 
-  const ChatConfig({required this.hasKey, required this.enableAI});
-}
-
-final openAIApiKeyProvider = Provider<String>(
-  (ref) => AppEnvironment.openAIApiKey,
-);
-
-final chatConfigProvider = Provider<ChatConfig>(
-  (ref) => ChatConfig(
-    hasKey: ref.watch(openAIApiKeyProvider).isNotEmpty,
-    enableAI: AppEnvironment.enableAI,
-  ),
-);
-
-final aiServiceProvider = Provider<AIService?>((ref) {
-  final key = ref.watch(openAIApiKeyProvider);
-  if (key.isEmpty) {
-    debugPrint('🔧 Modo IA deshabilitado - API key no configurada');
-    return null;
-  }
-  return AIService(config: AIServiceConfig(apiKey: key));
+// Configuración del chat
+final chatConfigProvider = Provider<ChatConfig>((ref) {
+  return ChatConfig.fromEnvironment();
 });
 
-enum ChatMode { basic, pro }
-
-class ChatMessage {
+class Message {
   final String id;
   final String content;
   final bool isUser;
   final DateTime timestamp;
   final bool isError;
 
-  ChatMessage({
+  Message({
     required this.id,
     required this.content,
     required this.isUser,
-    DateTime? timestamp,
+    required this.timestamp,
     this.isError = false,
-  }) : timestamp = timestamp ?? DateTime.now();
-
-  ChatMessage.error(this.content)
-      : id = DateTime.now().millisecondsSinceEpoch.toString(),
-        isUser = false,
-        timestamp = DateTime.now(),
-        isError = true;
+  });
 }
 
+// Alias de compatibilidad con UI existente
+typedef ChatMessage = Message;
+
+// Estado del chat
 class ChatState {
-  final List<ChatMessage> messages;
+  final List<Message> messages;
   final bool isLoading;
-  final ChatMode mode;
   final String? error;
-  final bool canSwitchToPro;
+  final ChatConfig config;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
-    this.mode = ChatMode.basic,
     this.error,
-    this.canSwitchToPro = false,
+    required this.config,
   });
 
   ChatState copyWith({
-    List<ChatMessage>? messages,
+    List<Message>? messages,
     bool? isLoading,
-    ChatMode? mode,
     String? error,
-    bool? canSwitchToPro,
-  }) =>
-      ChatState(
-        messages: messages ?? this.messages,
-        isLoading: isLoading ?? this.isLoading,
-        mode: mode ?? this.mode,
-        error: error,
-        canSwitchToPro: canSwitchToPro ?? this.canSwitchToPro,
-      );
-
-  bool get isProMode => mode == ChatMode.pro;
-}
-
-class ChatController extends StateNotifier<ChatState> {
-  final Ref _ref;
-  AIService? get _ai => _ref.read(aiServiceProvider);
-  bool get _hasAIKey => _ref.read(openAIApiKeyProvider).isNotEmpty;
-
-  ChatController(this._ref) : super(const ChatState()) {
-    _initialize();
-  }
-
-  void _initialize() {
-    final initialMode = _hasAIKey ? ChatMode.pro : ChatMode.basic;
-
-    state = ChatState(
-      mode: initialMode,
-      canSwitchToPro: _hasAIKey,
-      messages: [
-        ChatMessage(
-          id: 'welcome',
-          content: _getWelcomeMessage(initialMode),
-          isUser: false,
-        ),
-      ],
+    ChatConfig? config,
+  }) {
+    return ChatState(
+      messages: messages ?? this.messages,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+      config: config ?? this.config,
     );
   }
 
-  String _getWelcomeMessage(ChatMode mode) {
-    if (mode == ChatMode.pro) {
-      return '¡Hola! Soy ARI con modo Pro activado. Tengo inteligencia artificial para ayudarte mejor. ¿Qué proyecto querés organizar?';
-    }
-    return '¡Hola! Soy ARI. Estoy en modo básico (sin IA). Configurá OPENAI_API_KEY para activar el modo Pro. ¿Qué querés organizar?';
-  }
+  bool get isProMode => config.isProMode;
+}
+
+// Controller con StateNotifier
+class ChatController extends StateNotifier<ChatState> {
+  final AIService _aiService;
+
+  ChatController(this._aiService)
+      : super(ChatState(config: ChatConfig.fromEnvironment()));
 
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    final userMsg = ChatMessage(
+    // Agregar mensaje del usuario
+    final userMessage = Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: text.trim(),
+      content: text,
       isUser: true,
+      timestamp: DateTime.now(),
     );
 
     state = state.copyWith(
-      messages: [...state.messages, userMsg],
+      messages: [...state.messages, userMessage],
       isLoading: true,
       error: null,
     );
 
-    try {
-      final response = await _generateResponse(text);
+    // Modo Básico (sin IA)
+    if (!state.config.isProMode) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      final botMessage = Message(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: 'Modo básico activo. Configurá OPENAI_API_KEY para usar IA.',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+      state = state.copyWith(
+        messages: [...state.messages, botMessage],
+        isLoading: false,
+      );
+      return;
+    }
 
-      final assistantMsg = ChatMessage(
+    // Modo Pro (con OpenAI)
+    try {
+      final response = await _aiService.sendMessage(text);
+      final botMessage = Message(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         content: response,
         isUser: false,
+        timestamp: DateTime.now(),
       );
-
       state = state.copyWith(
-        messages: [...state.messages, assistantMsg],
+        messages: [...state.messages, botMessage],
         isLoading: false,
       );
     } catch (e) {
@@ -156,114 +122,34 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  Future<String> _generateResponse(String userText) async {
-    if (state.isProMode && _ai != null) {
-      final history = state.messages
-          .map((m) => AIMessage(
-                role: m.isUser ? 'user' : 'assistant',
-                content: m.content,
-              ))
-          .toList();
-
-      final result = await _ai!.generateResponse(
-        userMessage: userText,
-        history: history,
-      );
-
-      if (result.isError) {
-        throw Exception(result.errorMessage);
-      }
-
-      return result.text;
-    }
-
-    return _generateBasicResponse(userText);
-  }
-
-  String _generateBasicResponse(String userText) {
-    final lower = userText.toLowerCase();
-    final step = state.messages.length ~/ 2;
-
-    if (lower.contains('hola') || lower.contains('buenas')) {
-      return '¡Hola! ¿Qué proyecto querés organizar hoy?';
-    }
-
-    if (lower.contains('proyecto') ||
-        lower.contains('quiero') ||
-        lower.contains('necesito')) {
-      return 'Perfecto, veo que querés empezar algo nuevo. ¿Cómo se llama el proyecto?';
-    }
-
-    if (step == 1) {
-      return 'Entendido. ¿Qué objetivo querés lograr con esto? Sé específico.';
-    }
-
-    if (step == 2) {
-      return 'Buenísimo. ¿Para cuándo lo necesitás? Fijemos una fecha.';
-    }
-
-    final generics = [
-      'Dale, seguimos. ¿Qué sigue?',
-      'Perfecto. ¿Necesitás ayuda con algún paso específico?',
-      'Interesante. ¿Cómo te gustaría organizar eso?',
-      'Vamos bien. ¿Querés que dividamos esto en tareas más chicas?',
-      'Ok. ¿Hay algo que te esté trabando?',
-    ];
-
-    return generics[step % generics.length];
-  }
-
-  void toggleMode() {
-    if (!_hasAIKey && state.mode == ChatMode.basic) {
-      state = state.copyWith(
-        error: 'Modo Pro no disponible. Configurá OPENAI_API_KEY',
-      );
-      return;
-    }
-
-    final newMode = state.isProMode ? ChatMode.basic : ChatMode.pro;
-
-    state = state.copyWith(
-      mode: newMode,
-      canSwitchToPro: _hasAIKey,
-      messages: [
-        ...state.messages,
-        ChatMessage(
-          id: 'system-${DateTime.now().millisecondsSinceEpoch}',
-          content:
-              '🔄 Modo cambiado a: ${newMode == ChatMode.pro ? "Pro (IA)" : "Básico"}',
-          isUser: false,
-        ),
-      ],
-      error: null,
-    );
-  }
-
   void clearChat() {
-    _initialize();
+    _aiService.clearHistory();
+    state = state.copyWith(messages: []);
   }
 
   void clearError() {
     state = state.copyWith(error: null);
   }
+
+  void toggleMode() {
+    state = state.copyWith(
+      error:
+          'El modo está definido por OPENAI_API_KEY. Configurá esa variable para activar/desactivar Pro.',
+    );
+  }
 }
 
-final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>(
-  (ref) => ChatController(ref),
-);
+// Provider del controller
+final chatControllerProvider =
+    StateNotifierProvider<ChatController, ChatState>((ref) {
+  final aiService = ref.watch(aiServiceProvider);
+  return ChatController(aiService);
+});
 
-final chatMessagesProvider = Provider<List<ChatMessage>>(
+final chatMessagesProvider = Provider<List<Message>>(
   (ref) => ref.watch(chatControllerProvider).messages,
 );
 
 final chatIsLoadingProvider = Provider<bool>(
   (ref) => ref.watch(chatControllerProvider).isLoading,
-);
-
-final chatErrorProvider = Provider<String?>(
-  (ref) => ref.watch(chatControllerProvider).error,
-);
-
-final chatModeProvider = Provider<ChatMode>(
-  (ref) => ref.watch(chatControllerProvider).mode,
 );
