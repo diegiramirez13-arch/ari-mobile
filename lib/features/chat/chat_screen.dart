@@ -46,7 +46,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         children: [
           if (state.error != null)
             MaterialBanner(
-              content: Text(state.error!),
+              content: Text(state.error!.message),
               actions: [
                 TextButton(
                   onPressed: controller.clearError,

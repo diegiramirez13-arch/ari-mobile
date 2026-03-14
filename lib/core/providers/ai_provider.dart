@@ -4,41 +4,21 @@ import '../models/chat_config.dart';
 import '../models/chat_error.dart';
 import '../services/ai_service.dart';
 
-// Configuración del chat
+// Providers
 final chatConfigProvider = Provider<ChatConfig>((ref) {
   return ChatConfig.fromEnvironment();
 });
 
-// Provider del servicio
 final aiServiceProvider = Provider<AIService>((ref) {
   final config = ref.watch(chatConfigProvider);
   return AIService(config);
 });
 
-class Message {
-  final String id;
-  final String content;
-  final bool isUser;
-  final DateTime timestamp;
-  final bool isError;
-
-  Message({
-    required this.id,
-    required this.content,
-    required this.isUser,
-    required this.timestamp,
-    this.isError = false,
-  });
-}
-
-// Alias de compatibilidad con UI existente
-typedef ChatMessage = Message;
-
-// Estado del chat
+// Estado
 class ChatState {
   final List<Message> messages;
   final bool isLoading;
-  final String? error;
+  final ChatError? error;
   final ChatConfig config;
 
   const ChatState({
@@ -51,92 +31,89 @@ class ChatState {
   ChatState copyWith({
     List<Message>? messages,
     bool? isLoading,
-    String? error,
+    ChatError? error,
+    bool clearError = false,
     ChatConfig? config,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: clearError ? null : (error ?? this.error),
       config: config ?? this.config,
     );
   }
-
-  bool get isProMode => config.isProMode;
 }
 
-// Controller con StateNotifier
+class Message {
+  final String id;
+  final String content;
+  final bool isUser;
+  final DateTime timestamp;
+
+  Message({
+    required this.id,
+    required this.content,
+    required this.isUser,
+    required this.timestamp,
+  });
+}
+
+// Controller
 class ChatController extends StateNotifier<ChatState> {
   final AIService _aiService;
 
-  ChatController(this._aiService, ChatConfig config)
-      : super(ChatState(config: config));
+  ChatController(this._aiService)
+      : super(ChatState(config: ChatConfig.fromEnvironment()));
 
   String get modeExplanation => state.config.isProMode
-      ? 'Modo Pro activo (${state.config.model})'
-      : 'Modo Básico - agregá OPENAI_API_KEY en build';
+      ? 'Modo Pro (${state.config.model})'
+      : 'Modo Básico - agregá OPENAI_API_KEY';
 
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    final userMessage = Message(
+    final userMsg = Message(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: text,
+      content: text.trim(),
       isUser: true,
       timestamp: DateTime.now(),
     );
 
     state = state.copyWith(
-      messages: [...state.messages, userMessage],
+      messages: [...state.messages, userMsg],
       isLoading: true,
-      error: null,
+      clearError: true,
     );
 
-    try {
-      final response = await _aiService.sendMessage(text);
-      final botMessage = Message(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        content: response,
-        isUser: false,
-        timestamp: DateTime.now(),
-      );
-      state = state.copyWith(
-        messages: [...state.messages, botMessage],
-        isLoading: false,
-      );
-    } catch (e) {
-      final normalized = _mapError(e);
-      state = state.copyWith(
-        isLoading: false,
-        error: normalized.message,
-      );
-    }
-  }
+    final reply = await _aiService.sendMessage(text);
 
-  ChatError _mapError(Object error) {
-    final raw = error.toString().toLowerCase();
-    if (raw.contains('socket') || raw.contains('network')) {
-      return const NetworkError();
-    }
-    return ApiError(error.toString());
+    final botMsg = Message(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      content: reply,
+      isUser: false,
+      timestamp: DateTime.now(),
+    );
+
+    state = state.copyWith(
+      messages: [...state.messages, botMsg],
+      isLoading: false,
+    );
   }
 
   void clearChat() {
     _aiService.clearHistory();
-    state = state.copyWith(messages: []);
+    state = state.copyWith(messages: [], clearError: true);
   }
 
   void clearError() {
-    state = state.copyWith(error: null);
+    state = state.copyWith(clearError: true);
   }
 }
 
-// Provider del controller
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
-  final aiService = ref.watch(aiServiceProvider);
-  final config = ref.watch(chatConfigProvider);
-  return ChatController(aiService, config);
+  final service = ref.watch(aiServiceProvider);
+  return ChatController(service);
 });
 
 final chatMessagesProvider = Provider<List<Message>>(
