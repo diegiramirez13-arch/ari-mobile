@@ -11,7 +11,9 @@ final chatConfigProvider = Provider<ChatConfig>((ref) {
 
 final aiServiceProvider = Provider<AIService>((ref) {
   final config = ref.watch(chatConfigProvider);
-  return AIService(config);
+  final service = AIService(config);
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 // Estado
@@ -62,8 +64,8 @@ class Message {
 class ChatController extends StateNotifier<ChatState> {
   final AIService _aiService;
 
-  ChatController(this._aiService)
-      : super(ChatState(config: ChatConfig.fromEnvironment()));
+  ChatController(this._aiService, ChatConfig config)
+      : super(ChatState(config: config));
 
   String get modeExplanation => state.config.isProMode
       ? 'Modo Pro (${state.config.model})'
@@ -85,19 +87,26 @@ class ChatController extends StateNotifier<ChatState> {
       clearError: true,
     );
 
-    final reply = await _aiService.sendMessage(text);
+    try {
+      final reply = await _aiService.sendMessage(text);
 
-    final botMsg = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: reply,
-      isUser: false,
-      timestamp: DateTime.now(),
-    );
+      final botMsg = Message(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: reply,
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
 
-    state = state.copyWith(
-      messages: [...state.messages, botMsg],
-      isLoading: false,
-    );
+      state = state.copyWith(
+        messages: [...state.messages, botMsg],
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: ApiError(e.toString()),
+      );
+    }
   }
 
   void clearChat() {
@@ -112,8 +121,9 @@ class ChatController extends StateNotifier<ChatState> {
 
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
+  final config = ref.watch(chatConfigProvider);
   final service = ref.watch(aiServiceProvider);
-  return ChatController(service);
+  return ChatController(service, config);
 });
 
 final chatMessagesProvider = Provider<List<Message>>(

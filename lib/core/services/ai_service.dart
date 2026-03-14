@@ -34,9 +34,17 @@ class AIService {
                   'Respondé en español rioplatense, máximo 3 oraciones.',
             ),
             ..._history.map(
-              (h) => ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string(h['content']!),
-              ),
+              (h) => h['role'] == 'assistant'
+                  ? ChatCompletionMessage.assistant(
+                      content: ChatCompletionAssistantMessageContent.string(
+                        h['content']!,
+                      ),
+                    )
+                  : ChatCompletionMessage.user(
+                      content: ChatCompletionUserMessageContent.string(
+                        h['content']!,
+                      ),
+                    ),
             ),
           ],
           temperature: _config.temperature,
@@ -50,7 +58,7 @@ class AIService {
       _addToHistory('assistant', reply);
       return reply;
     } catch (e) {
-      return 'Error: $e';
+      throw Exception('No se pudo obtener respuesta de IA: $e');
     }
   }
 
