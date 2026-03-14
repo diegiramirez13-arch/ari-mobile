@@ -1,31 +1,32 @@
 import 'package:openai_dart/openai_dart.dart';
 
 import '../config/environment.dart';
+import '../models/chat_config.dart';
 
 class AIService {
-  late final OpenAIClient _client;
-  final List<Map<String, String>> _history = [];
+  final OpenAIClient? _client;
+  final ChatConfig _config;
+  final List<Map<String, dynamic>> _history = [];
   static const int _maxHistory = 6;
 
-  AIService() {
-    if (Environment.isProMode) {
-      _client = OpenAIClient(apiKey: Environment.openAiApiKey);
-    }
-  }
+  AIService(this._config)
+      : _client = _config.isProMode
+            ? OpenAIClient(apiKey: Environment.openAiApiKey)
+            : null;
 
-  bool get isAvailable => Environment.isProMode;
+  bool get isAvailable => _config.isProMode && _client != null;
 
   Future<String> sendMessage(String message) async {
-    if (!isAvailable) {
-      throw Exception('Modo Pro no disponible - falta API Key');
+    if (!_config.isProMode) {
+      return _basicResponse(message);
     }
 
     _addToHistory('user', message);
 
     try {
-      final response = await _client.createChatCompletion(
+      final response = await _client!.createChatCompletion(
         request: CreateChatCompletionRequest(
-          model: ChatCompletionModel.modelId('gpt-4o-mini'),
+          model: ChatCompletionModel.modelId(_config.model),
           messages: [
             const ChatCompletionMessage.system(
               content: 'Sos ARI, un asistente de productividad. '
@@ -33,8 +34,8 @@ class AIService {
                   'de forma directa y útil.',
             ),
             ..._history.map((h) {
-              final role = h['role']!;
-              final content = h['content']!;
+              final role = h['role'] as String;
+              final content = h['content'] as String;
               if (role == 'assistant') {
                 return ChatCompletionMessage.assistant(content: content);
               }
@@ -43,8 +44,8 @@ class AIService {
               );
             }),
           ],
-          temperature: 0.7,
-          maxTokens: 1000,
+          temperature: _config.temperature,
+          maxTokens: _config.maxTokens,
         ),
       );
 
@@ -57,6 +58,14 @@ class AIService {
     }
   }
 
+  String _basicResponse(String userText) {
+    final lower = userText.toLowerCase();
+    if (lower.contains('hola') || lower.contains('buenas')) {
+      return '¡Hola! Estoy en modo básico. Configurá OPENAI_API_KEY para activar Pro.';
+    }
+    return 'Modo básico activo. Configurá OPENAI_API_KEY para usar IA.';
+  }
+
   void _addToHistory(String role, String content) {
     _history.add({'role': role, 'content': content});
     if (_history.length > _maxHistory) {
@@ -67,8 +76,6 @@ class AIService {
   void clearHistory() => _history.clear();
 
   void dispose() {
-    if (isAvailable) {
-      _client.close();
-    }
+    _client?.close();
   }
 }

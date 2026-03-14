@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeAIService extends AIService {
+  _FakeAIService() : super(const ChatConfig(isProMode: true));
   bool cleared = false;
 
   @override

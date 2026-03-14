@@ -4,7 +4,10 @@ import '../models/chat_config.dart';
 import '../services/ai_service.dart';
 
 // Provider del servicio
-final aiServiceProvider = Provider<AIService>((ref) => AIService());
+final aiServiceProvider = Provider<AIService>((ref) {
+  final config = ref.watch(chatConfigProvider);
+  return AIService(config);
+});
 
 // Configuración del chat
 final chatConfigProvider = Provider<ChatConfig>((ref) {
