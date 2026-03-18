@@ -12,47 +12,67 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  final TextEditingController _textController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
 
   @override
   void dispose() {
-    _textController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(chatControllerProvider);
+    final config = ref.watch(chatConfigProvider);
     final controller = ref.read(chatControllerProvider.notifier);
 
     return Scaffold(
-      appBar: _buildAppBar(state.config, controller),
+      appBar: _buildAppBar(state, config, controller),
       body: Column(
         children: [
           Expanded(child: _buildMessageList(state)),
           if (state.isLoading) const LinearProgressIndicator(),
-          _buildInputField(controller),
+          _buildInputArea(state, controller),
         ],
       ),
     );
   }
 
   PreferredSizeWidget _buildAppBar(
+    ChatState state,
     ChatConfig config,
     ChatController controller,
   ) {
+    final proMode = config.isProMode || state.isProMode;
+
     return AppBar(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      title: Row(
         children: [
           const Text('ARI', style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(
-            config.isProMode ? 'Modo Pro (GPT-4)' : 'Modo Básico',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: proMode ? Colors.amber : Colors.grey.shade700,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              proMode ? 'PRO' : 'BÁSICO',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: proMode ? Colors.black : Colors.white,
+              ),
+            ),
           ),
         ],
       ),
       actions: [
+        if (proMode)
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Icon(Icons.bolt, color: Colors.amber),
+          ),
         IconButton(
           icon: const Icon(Icons.delete_outline),
           onPressed: controller.clearChat,
@@ -93,6 +113,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         decoration: BoxDecoration(
           color: isUser ? Colors.blue.shade700 : Colors.grey.shade800,
           borderRadius: BorderRadius.circular(20),
+          border: message.isError
+              ? Border.all(color: Colors.red.shade400)
+              : null,
         ),
         child: Text(
           message.content,
@@ -102,14 +125,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildInputField(ChatController controller) {
+  Widget _buildInputArea(ChatState state, ChatController controller) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8),
       child: Row(
         children: [
           Expanded(
             child: TextField(
-              controller: _textController,
+              controller: _messageController,
+              enabled: !state.isLoading,
               decoration: InputDecoration(
                 hintText: 'Escribí tu mensaje...',
                 filled: true,
@@ -124,8 +148,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.send, color: Colors.blue),
-            onPressed: () => _submit(_textController.text),
+            onPressed: state.isLoading ? null : () => _submit(_messageController.text),
+            icon: state.isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.send, color: Colors.blue),
           ),
         ],
       ),
@@ -137,6 +167,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (trimmed.isEmpty) return;
 
     ref.read(chatControllerProvider.notifier).sendMessage(trimmed);
-    _textController.clear();
+    _messageController.clear();
   }
 }

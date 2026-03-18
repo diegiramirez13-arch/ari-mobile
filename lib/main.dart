@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'firebase_options.dart';
 import 'core/config/environment.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
-import 'features/chat/chat_screen.dart';
 import 'features/auth/login_screen.dart';
+import 'features/chat/chat_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Cargar variables de entorno y feature flags antes de inicializar servicios.
   configureEnvironment();
 
   await Firebase.initializeApp(
@@ -19,21 +22,22 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: AriApp(),
+      child: MyApp(),
     ),
   );
 }
 
-class AriApp extends StatelessWidget {
-  const AriApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ARI',
+      title: 'ARI - Asistente de IA',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(
         useMaterial3: true,
+      ).copyWith(
         colorScheme: ColorScheme.dark(
           primary: Colors.blue.shade700,
           secondary: Colors.cyan.shade400,
