@@ -6,24 +6,21 @@ class AIService {
   static const String _systemPrompt =
       'Sos ARI, Asistente de Inteligencia Aplicada. '
       'PRINCIPIO: Acción > Charla. '
-      'Si el usuario expresa que quiere crear o empezar un proyecto, plan o tarea importante, '
-      'debés incluir al final de tu respuesta el tag: [ACTION:CREATE_PROJECT:Nombre del Proyecto]. '
-      'Ejemplo: "¡Excelente idea! Te ayudo a organizarlo. [ACTION:CREATE_PROJECT:Aprender Flutter]" '
-      'Respondé siempre en español rioplatense, breve y al punto.';
+      'Si el usuario quiere iniciar un proyecto, incluí al final: '
+      '[ACTION:CREATE_PROJECT:Nombre]. '
+      'Respondé en español rioplatense, breve y al punto.';
 
   late final OpenAIClient _client;
 
   AIService() {
-    if (isAvailable) {
+    if (Environment.openAiApiKey.isNotEmpty) {
       _client = OpenAIClient(apiKey: Environment.openAiApiKey);
     }
   }
 
-  bool get isAvailable => Environment.isProMode;
-
   Future<String> generateResponse(List<Map<String, String>> history) async {
-    if (!isAvailable) {
-      return 'Modo Pro no disponible. Configurá OPENAI_API_KEY para activar ARI Pro.';
+    if (Environment.openAiApiKey.isEmpty) {
+      return 'Error: No se detectó la llave de ARI Pro. Verificá tu configuración.';
     }
 
     try {
@@ -32,9 +29,9 @@ class AIService {
           model: ChatCompletionModel.modelId('gpt-4o-mini'),
           messages: [
             const ChatCompletionMessage.system(content: _systemPrompt),
-            ...history.map((message) {
-              final role = message['role'] ?? 'user';
-              final content = message['content'] ?? '';
+            ...history.map((msg) {
+              final role = msg['role'] ?? 'user';
+              final content = msg['content'] ?? '';
               if (role == 'assistant') {
                 return ChatCompletionMessage.assistant(content: content);
               }
@@ -49,9 +46,11 @@ class AIService {
       );
 
       return response.choices.first.message.content ??
-          'No pude procesar la acción.';
+          'ARI no pudo procesar la idea.';
+    } on OpenAIClientException catch (e) {
+      return 'Fallo en la conexión Pro: ${e.message}';
     } catch (e) {
-      return 'Error en el motor de ARI Pro: $e';
+      return 'Error inesperado en el motor: $e';
     }
   }
 
@@ -64,7 +63,7 @@ class AIService {
   void clearHistory() {}
 
   void dispose() {
-    if (isAvailable) {
+    if (Environment.openAiApiKey.isNotEmpty) {
       _client.close();
     }
   }

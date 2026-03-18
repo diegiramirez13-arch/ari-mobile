@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/chat_config.dart';
 import '../../core/providers/ai_provider.dart';
+import '../profile/profile_screen.dart';
+import '../projects/projects_screen.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -27,7 +29,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final controller = ref.read(chatControllerProvider.notifier);
 
     return Scaffold(
-      appBar: _buildAppBar(state, config, controller),
+      appBar: _buildAppBar(context, state, config, controller),
       body: Column(
         children: [
           Expanded(child: _buildMessageList(state)),
@@ -39,6 +41,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(
+    BuildContext context,
     ChatState state,
     ChatConfig config,
     ChatController controller,
@@ -68,6 +71,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ],
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.person_outline),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            );
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.folder_open_outlined),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProjectsScreen()),
+            );
+          },
+        ),
         if (proMode)
           const Padding(
             padding: EdgeInsets.only(right: 4),
@@ -148,7 +169,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            onPressed: state.isLoading ? null : () => _submit(_messageController.text),
+            onPressed:
+                state.isLoading ? null : () => _submit(_messageController.text),
             icon: state.isLoading
                 ? const SizedBox(
                     width: 18,

@@ -84,12 +84,14 @@ class FirestoreService {
   Future<void> saveChatMessage(
     String userId,
     String message,
-    bool isUser,
-  ) async {
+    bool isUser, {
+    bool isError = false,
+  }) async {
     try {
       await _chatCollection(userId).add({
         'message': message,
         'isUser': isUser,
+        'isError': isError,
         'timestamp': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -98,11 +100,21 @@ class FirestoreService {
     }
   }
 
-  Future<void> saveMessage(String text, bool isUser, {String? userId}) async {
+  Future<void> saveMessage(
+    String text,
+    bool isUser, {
+    String? userId,
+    bool isError = false,
+  }) async {
     final resolvedUserId = userId ?? currentUserId;
     if (resolvedUserId == null) return;
 
-    await saveChatMessage(resolvedUserId, text, isUser);
+    await saveChatMessage(
+      resolvedUserId,
+      text,
+      isUser,
+      isError: isError,
+    );
   }
 
   Stream<List<Map<String, dynamic>>> getChatHistoryStream(String userId) {

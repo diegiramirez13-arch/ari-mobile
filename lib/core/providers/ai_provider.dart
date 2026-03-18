@@ -195,7 +195,7 @@ class ChatController extends StateNotifier<ChatState> {
 
       response = await _aiService.generateResponse(history);
       response = await _executeDetectedActions(response);
-      isError = response.startsWith('Error en el motor de ARI Pro');
+      isError = response.startsWith('Error') || response.startsWith('Fallo');
     } else {
       response = 'Modo básico: Recibido. ¿Querés que lo agende como proyecto?';
     }
@@ -209,7 +209,12 @@ class ChatController extends StateNotifier<ChatState> {
     );
 
     if (_userId != null) {
-      await _firestoreService.saveMessage(response, false, userId: _userId);
+      await _firestoreService.saveMessage(
+        response,
+        false,
+        userId: _userId,
+        isError: isError,
+      );
     }
 
     if (_userId == null) {
