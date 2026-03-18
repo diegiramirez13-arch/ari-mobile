@@ -1,7 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chat_config.dart';
 import '../services/ai_service.dart';
+import '../services/firestore_service.dart';
+import 'auth_provider.dart';
+
+final firestoreChatServiceProvider =
+    Provider<FirestoreService>((ref) => FirestoreService());
 
 final aiServiceProvider = Provider<AIService>((ref) => AIService());
 
@@ -59,10 +66,18 @@ class ChatState {
 
 class ChatController extends StateNotifier<ChatState> {
   final AIService _aiService;
+  final FirestoreService _firestoreService;
   final ChatConfig _config;
+  final String? _userId;
 
-  ChatController(this._aiService, this._config)
-      : super(
+  StreamSubscription<List<Map<String, dynamic>>>? _chatSubscription;
+
+  ChatController(
+    this._aiService,
+    this._firestoreService,
+    this._config,
+    this._userId,
+  ) : super(
           ChatState(
             config: _config,
             messages: [
@@ -75,7 +90,53 @@ class ChatController extends StateNotifier<ChatState> {
               ),
             ],
           ),
-        );
+        ) {
+    _initChat();
+  }
+
+  void _initChat() {
+    if (_userId == null) return;
+
+    _chatSubscription =
+        _firestoreService.getChatHistoryStream(_userId).listen((messages) {
+      if (messages.isEmpty) {
+        state = state.copyWith(messages: [_welcomeMessage()]);
+        return;
+      }
+
+      state = state.copyWith(
+        messages: messages.map(_messageFromMap).toList(),
+        isLoading: false,
+        error: null,
+      );
+    });
+  }
+
+  Message _welcomeMessage() {
+    return Message(
+      id: 'welcome',
+      content: '¡Hola! Soy ARI. ¿En qué plan de acción trabajamos hoy?',
+      isUser: false,
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Message _messageFromMap(Map<String, dynamic> raw) {
+    final timestamp = raw['timestamp'];
+    final resolvedTimestamp = timestamp is Timestamp
+        ? timestamp.toDate()
+        : DateTime.now();
+    final content = (raw['message'] ?? raw['text'] ?? '').toString();
+
+    return Message(
+      id: raw['id']?.toString() ??
+          '${resolvedTimestamp.microsecondsSinceEpoch}-${raw['isUser']}',
+      content: content,
+      isUser: raw['isUser'] == true,
+      timestamp: resolvedTimestamp,
+      isError: raw['isError'] == true,
+    );
+  }
 
   Future<void> sendMessage(String text) async {
     final trimmed = text.trim();
@@ -95,6 +156,13 @@ class ChatController extends StateNotifier<ChatState> {
       error: null,
     );
 
+    if (_userId != null) {
+      await _firestoreService.saveChatMessage(_userId, trimmed, true);
+    }
+
+    String response;
+    var isError = false;
+
     if (_config.isProMode) {
       final history = updatedMessages
           .map(
@@ -105,50 +173,52 @@ class ChatController extends StateNotifier<ChatState> {
           )
           .toList();
 
-      final response = await _aiService.generateResponse(history);
-      final isError = response.startsWith('Error de conexión');
-      final aiMessage = Message(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        content: response,
-        isUser: false,
-        timestamp: DateTime.now(),
-        isError: isError,
-      );
+      response = await _aiService.generateResponse(history);
+      isError = response.startsWith('Error de conexión');
+    } else {
+      await Future.delayed(const Duration(seconds: 1));
+      response = 'Modo básico: Idea recibida. ¿La desglosamos?';
+    }
 
+    final assistantMessage = Message(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      content: response,
+      isUser: false,
+      timestamp: DateTime.now(),
+      isError: isError,
+    );
+
+    if (_userId != null) {
+      await _firestoreService.saveChatMessage(_userId, response, false);
+    }
+
+    if (_userId == null) {
       state = state.copyWith(
-        messages: [...updatedMessages, aiMessage],
+        messages: [...updatedMessages, assistantMessage],
         isLoading: false,
         error: isError ? response : null,
       );
       return;
     }
 
-    await Future.delayed(const Duration(seconds: 1));
-    final basicResponse = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: 'Modo básico: Recibí tu idea. ¿Querés que la desglosamos en tareas?',
-      isUser: false,
-      timestamp: DateTime.now(),
-    );
-
     state = state.copyWith(
-      messages: [...updatedMessages, basicResponse],
       isLoading: false,
+      error: isError ? response : null,
     );
   }
 
-  void clearChat() {
+  Future<void> clearChat() async {
     _aiService.clearHistory();
-    state = ChatState(
-      config: _config,
-      messages: [
-        Message(
-          id: 'reset',
-          content: 'Chat reiniciado. ¿Qué sigue en la lista?',
-          isUser: false,
-          timestamp: DateTime.now(),
-        ),
-      ],
+
+    if (_userId != null) {
+      await _firestoreService.clearChatHistory(_userId);
+      return;
+    }
+
+    state = state.copyWith(
+      messages: [_welcomeMessage()],
+      isLoading: false,
+      error: null,
     );
   }
 
@@ -162,13 +232,22 @@ class ChatController extends StateNotifier<ChatState> {
           'El modo está definido por OPENAI_API_KEY. Configurá esa variable para activar/desactivar Pro.',
     );
   }
+
+  @override
+  void dispose() {
+    _chatSubscription?.cancel();
+    super.dispose();
+  }
 }
 
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
   final aiService = ref.watch(aiServiceProvider);
+  final firestoreService = ref.watch(firestoreChatServiceProvider);
   final config = ref.watch(chatConfigProvider);
-  return ChatController(aiService, config);
+  final userId = ref.watch(currentUserIdProvider);
+
+  return ChatController(aiService, firestoreService, config, userId);
 });
 
 final chatMessagesProvider = Provider<List<Message>>(

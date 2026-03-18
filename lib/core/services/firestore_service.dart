@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../models/project_model.dart';
 import '../models/user_profile_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Colecciones
   static const String usersCollection = 'users';
@@ -11,6 +14,15 @@ class FirestoreService {
   static const String chatsCollection = 'chats';
   static const String profileCollection = 'profile';
   static const String profileDocId = 'data';
+
+  CollectionReference<Map<String, dynamic>> _chatCollection(String userId) {
+    return _db
+        .collection(usersCollection)
+        .doc(userId)
+        .collection(chatsCollection);
+  }
+
+  String? get currentUserId => _auth.currentUser?.uid;
 
   // ============ PROJECTS ============
   Future<void> saveProject(String userId, ProjectModel project) async {
@@ -58,11 +70,7 @@ class FirestoreService {
     bool isUser,
   ) async {
     try {
-      await _db
-          .collection(usersCollection)
-          .doc(userId)
-          .collection(chatsCollection)
-          .add({
+      await _chatCollection(userId).add({
         'message': message,
         'isUser': isUser,
         'timestamp': FieldValue.serverTimestamp(),
@@ -73,14 +81,43 @@ class FirestoreService {
     }
   }
 
+  Future<void> saveMessage(String text, bool isUser, {String? userId}) async {
+    final resolvedUserId = userId ?? currentUserId;
+    if (resolvedUserId == null) return;
+
+    await saveChatMessage(resolvedUserId, text, isUser);
+  }
+
   Stream<List<Map<String, dynamic>>> getChatHistoryStream(String userId) {
-    return _db
-        .collection(usersCollection)
-        .doc(userId)
-        .collection(chatsCollection)
-        .orderBy('timestamp', descending: true)
+    return _chatCollection(userId)
+        .orderBy('timestamp', descending: false)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  Stream<List<Map<String, dynamic>>> getChatStream({String? userId}) {
+    final resolvedUserId = userId ?? currentUserId;
+    if (resolvedUserId == null) {
+      return Stream.value([]);
+    }
+
+    return getChatHistoryStream(resolvedUserId);
+  }
+
+  Future<void> clearChatHistory(String userId) async {
+    final batch = _db.batch();
+    final snapshots = await _chatCollection(userId).get();
+    for (final doc in snapshots.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
+
+  Future<void> clearChat({String? userId}) async {
+    final resolvedUserId = userId ?? currentUserId;
+    if (resolvedUserId == null) return;
+
+    await clearChatHistory(resolvedUserId);
   }
 
   // ============ PROFILE ============
