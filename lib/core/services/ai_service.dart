@@ -4,23 +4,19 @@ import '../config/environment.dart';
 
 class AIService {
   late final OpenAIClient _client;
-  final List<Map<String, String>> _history = [];
-  static const int _maxHistory = 6;
 
   AIService() {
-    if (Environment.isProMode) {
+    if (isAvailable) {
       _client = OpenAIClient(apiKey: Environment.openAiApiKey);
     }
   }
 
   bool get isAvailable => Environment.isProMode;
 
-  Future<String> sendMessage(String message) async {
+  Future<String> generateResponse(List<Map<String, String>> history) async {
     if (!isAvailable) {
-      throw Exception('Modo Pro no disponible - falta API Key');
+      return 'Modo Pro no disponible. Configurá OPENAI_API_KEY para activar ARI Pro.';
     }
-
-    _addToHistory('user', message);
 
     try {
       final response = await _client.createChatCompletion(
@@ -28,13 +24,14 @@ class AIService {
           model: ChatCompletionModel.modelId('gpt-4o-mini'),
           messages: [
             const ChatCompletionMessage.system(
-              content: 'Sos ARI, un asistente de productividad. '
-                  'Respondé en español rioplatense, máximo 3 oraciones, '
-                  'de forma directa y útil.',
+              content: 'Sos ARI, un Asistente de Inteligencia Aplicada experto '
+                  'en productividad. Tu objetivo es ayudar a planificar y '
+                  'ejecutar acciones concretas. Respondé en español '
+                  'rioplatense, de forma breve y siempre orientada a la acción.',
             ),
-            ..._history.map((h) {
-              final role = h['role']!;
-              final content = h['content']!;
+            ...history.map((message) {
+              final role = message['role'] ?? 'user';
+              final content = message['content'] ?? '';
               if (role == 'assistant') {
                 return ChatCompletionMessage.assistant(content: content);
               }
@@ -48,23 +45,20 @@ class AIService {
         ),
       );
 
-      final content = response.choices.first.message.content;
-      final result = content ?? 'No entendí, ¿podés repetir?';
-      _addToHistory('assistant', result);
-      return result;
+      return response.choices.first.message.content ??
+          'No pude generar una respuesta.';
     } catch (e) {
-      return 'Error: $e';
+      return 'Error de conexión con el motor de ARI Pro: $e';
     }
   }
 
-  void _addToHistory(String role, String content) {
-    _history.add({'role': role, 'content': content});
-    if (_history.length > _maxHistory) {
-      _history.removeAt(0);
-    }
+  Future<String> sendMessage(String message) {
+    return generateResponse([
+      {'role': 'user', 'content': message},
+    ]);
   }
 
-  void clearHistory() => _history.clear();
+  void clearHistory() {}
 
   void dispose() {
     if (isAvailable) {
