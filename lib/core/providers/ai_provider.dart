@@ -65,6 +65,10 @@ class ChatState {
 }
 
 class ChatController extends StateNotifier<ChatState> {
+  static final RegExp _createProjectTagPattern = RegExp(
+    r'\[ACTION:CREATE_PROJECT:([^\]]+)\]',
+  );
+
   final AIService _aiService;
   final FirestoreService _firestoreService;
   final ChatConfig _config;
@@ -138,6 +142,22 @@ class ChatController extends StateNotifier<ChatState> {
     );
   }
 
+  Future<String> _executeDetectedActions(String response) async {
+    final match = _createProjectTagPattern.firstMatch(response);
+    if (match == null) {
+      return response;
+    }
+
+    final projectName = match.group(1)?.trim() ?? '';
+    if (projectName.isEmpty || _userId == null) {
+      return response.replaceFirst(_createProjectTagPattern, '').trim();
+    }
+
+    await _firestoreService.createProject(projectName, userId: _userId);
+    final replacement = '🚀 Proyecto "$projectName" creado en tu lista.';
+    return response.replaceFirst(_createProjectTagPattern, replacement).trim();
+  }
+
   Future<void> sendMessage(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
@@ -157,7 +177,7 @@ class ChatController extends StateNotifier<ChatState> {
     );
 
     if (_userId != null) {
-      await _firestoreService.saveChatMessage(_userId, trimmed, true);
+      await _firestoreService.saveMessage(trimmed, true, userId: _userId);
     }
 
     String response;
@@ -174,10 +194,10 @@ class ChatController extends StateNotifier<ChatState> {
           .toList();
 
       response = await _aiService.generateResponse(history);
-      isError = response.startsWith('Error de conexión');
+      response = await _executeDetectedActions(response);
+      isError = response.startsWith('Error en el motor de ARI Pro');
     } else {
-      await Future.delayed(const Duration(seconds: 1));
-      response = 'Modo básico: Idea recibida. ¿La desglosamos?';
+      response = 'Modo básico: Recibido. ¿Querés que lo agende como proyecto?';
     }
 
     final assistantMessage = Message(
@@ -189,7 +209,7 @@ class ChatController extends StateNotifier<ChatState> {
     );
 
     if (_userId != null) {
-      await _firestoreService.saveChatMessage(_userId, response, false);
+      await _firestoreService.saveMessage(response, false, userId: _userId);
     }
 
     if (_userId == null) {

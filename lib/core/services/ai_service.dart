@@ -3,6 +3,14 @@ import 'package:openai_dart/openai_dart.dart';
 import '../config/environment.dart';
 
 class AIService {
+  static const String _systemPrompt =
+      'Sos ARI, Asistente de Inteligencia Aplicada. '
+      'PRINCIPIO: Acción > Charla. '
+      'Si el usuario expresa que quiere crear o empezar un proyecto, plan o tarea importante, '
+      'debés incluir al final de tu respuesta el tag: [ACTION:CREATE_PROJECT:Nombre del Proyecto]. '
+      'Ejemplo: "¡Excelente idea! Te ayudo a organizarlo. [ACTION:CREATE_PROJECT:Aprender Flutter]" '
+      'Respondé siempre en español rioplatense, breve y al punto.';
+
   late final OpenAIClient _client;
 
   AIService() {
@@ -23,12 +31,7 @@ class AIService {
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.modelId('gpt-4o-mini'),
           messages: [
-            const ChatCompletionMessage.system(
-              content: 'Sos ARI, un Asistente de Inteligencia Aplicada experto '
-                  'en productividad. Tu objetivo es ayudar a planificar y '
-                  'ejecutar acciones concretas. Respondé en español '
-                  'rioplatense, de forma breve y siempre orientada a la acción.',
-            ),
+            const ChatCompletionMessage.system(content: _systemPrompt),
             ...history.map((message) {
               final role = message['role'] ?? 'user';
               final content = message['content'] ?? '';
@@ -46,9 +49,9 @@ class AIService {
       );
 
       return response.choices.first.message.content ??
-          'No pude generar una respuesta.';
+          'No pude procesar la acción.';
     } catch (e) {
-      return 'Error de conexión con el motor de ARI Pro: $e';
+      return 'Error en el motor de ARI Pro: $e';
     }
   }
 

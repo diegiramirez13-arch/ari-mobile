@@ -63,6 +63,23 @@ class FirestoreService {
     }
   }
 
+  Future<void> createProject(String name, {String? userId}) async {
+    final resolvedUserId = userId ?? currentUserId;
+    if (resolvedUserId == null) return;
+
+    final now = DateTime.now();
+    final projectId = now.microsecondsSinceEpoch.toString();
+    final project = ProjectModel(
+      id: projectId,
+      title: name,
+      description: 'Proyecto creado automáticamente por ARI Pro.',
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await saveProject(resolvedUserId, project);
+  }
+
   // ============ CHAT HISTORY ============
   Future<void> saveChatMessage(
     String userId,
