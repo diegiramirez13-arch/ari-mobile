@@ -3,7 +3,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../config/environment.dart';
 
 class AIService {
-  late final OpenAIClient _client;
+  OpenAIClient? _client;
   final List<Map<String, String>> _history = [];
   static const int _maxHistory = 6;
 
@@ -17,13 +17,13 @@ class AIService {
 
   Future<String> sendMessage(String message) async {
     if (!isAvailable) {
-      throw Exception('Modo Pro no disponible - falta API Key');
+      return 'El modo Pro no está configurado. Por favor, verificá tu API Key.';
     }
 
     _addToHistory('user', message);
 
     try {
-      final response = await _client.createChatCompletion(
+      final response = await _client!.createChatCompletion(
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.modelId('gpt-4o-mini'),
           messages: [
@@ -67,8 +67,6 @@ class AIService {
   void clearHistory() => _history.clear();
 
   void dispose() {
-    if (isAvailable) {
-      _client.close();
-    }
+    _client?.close();
   }
 }

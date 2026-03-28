@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/chat_config.dart';
 import '../../core/providers/ai_provider.dart';
+import '../profile/profile_screen.dart';
+import '../projects/projects_screen.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -12,11 +14,11 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  final TextEditingController _textController = TextEditingController();
+  final TextEditingController _controller = TextEditingController();
 
   @override
   void dispose() {
-    _textController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -26,18 +28,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final controller = ref.read(chatControllerProvider.notifier);
 
     return Scaffold(
-      appBar: _buildAppBar(state.config, controller),
+      appBar: _buildAppBar(state, state.config, controller),
       body: Column(
         children: [
           Expanded(child: _buildMessageList(state)),
           if (state.isLoading) const LinearProgressIndicator(),
-          _buildInputField(controller),
+          _buildInputField(),
         ],
       ),
     );
   }
 
   PreferredSizeWidget _buildAppBar(
+    ChatState state,
     ChatConfig config,
     ChatController controller,
   ) {
@@ -54,8 +57,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       actions: [
         IconButton(
+          icon: const Icon(Icons.folder),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProjectsScreen()),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.person),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          ),
+        ),
+        IconButton(
           icon: const Icon(Icons.delete_outline),
-          onPressed: controller.clearChat,
+          onPressed: state.messages.isEmpty ? null : controller.clearChat,
         ),
       ],
     );
@@ -102,14 +119,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildInputField(ChatController controller) {
+  Widget _buildInputField() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
         children: [
           Expanded(
             child: TextField(
-              controller: _textController,
+              controller: _controller,
               decoration: InputDecoration(
                 hintText: 'Escribí tu mensaje...',
                 filled: true,
@@ -125,7 +142,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.send, color: Colors.blue),
-            onPressed: () => _submit(_textController.text),
+            onPressed: () => _submit(_controller.text),
           ),
         ],
       ),
@@ -137,6 +154,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (trimmed.isEmpty) return;
 
     ref.read(chatControllerProvider.notifier).sendMessage(trimmed);
-    _textController.clear();
+    _controller.clear();
   }
 }

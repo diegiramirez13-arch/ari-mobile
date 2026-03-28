@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'core/config/environment.dart';
+import 'core/providers/ai_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
 import 'features/chat/chat_screen.dart';
@@ -17,9 +18,14 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  final bootstrapContainer = ProviderContainer();
+  bootstrapContainer.read(chatConfigProvider);
+  bootstrapContainer.read(aiServiceProvider);
+
   runApp(
-    const ProviderScope(
-      child: AriApp(),
+    UncontrolledProviderScope(
+      container: bootstrapContainer,
+      child: const AriApp(),
     ),
   );
 }
