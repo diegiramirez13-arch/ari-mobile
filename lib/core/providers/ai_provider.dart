@@ -1,38 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chat_config.dart';
+import '../models/chat_message.dart';
+import '../repositories/chat_repository.dart';
 import '../services/ai_service.dart';
+import 'auth_provider.dart';
 import 'profile_provider.dart';
 
-// Provider del servicio
 final aiServiceProvider = Provider<AIService>((ref) => AIService());
 
-// Configuración del chat
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  return ChatRepository();
+});
+
 final chatConfigProvider = Provider<ChatConfig>((ref) {
   final profile = ref.watch(profileControllerProvider).value;
   return ChatConfig.fromEnvironment(isProUser: profile?.isProUser ?? false);
 });
 
-class Message {
-  final String id;
-  final String content;
-  final bool isUser;
-  final DateTime timestamp;
-  final bool isError;
+typedef Message = ChatMessage;
 
-  Message({
-    required this.id,
-    required this.content,
-    required this.isUser,
-    required this.timestamp,
-    this.isError = false,
-  });
-}
-
-// Alias de compatibilidad con UI existente
-typedef ChatMessage = Message;
-
-// Estado del chat
 class ChatState {
   final List<Message> messages;
   final bool isLoading;
@@ -63,18 +52,49 @@ class ChatState {
   bool get isProMode => config.isProMode;
 }
 
-// Controller con StateNotifier
 class ChatController extends StateNotifier<ChatState> {
-  final AIService _aiService;
-  final ChatConfig _config;
+  ChatController(this.ref, this._aiService, this._chatRepository, this._config)
+      : super(ChatState(config: _config)) {
+    _bootstrap();
+  }
 
-  ChatController(this._aiService, this._config) : super(ChatState(config: _config));
+  final Ref ref;
+  final AIService _aiService;
+  final ChatRepository _chatRepository;
+  final ChatConfig _config;
+  StreamSubscription<List<ChatMessage>>? _messagesSub;
+
+  String? get _uid => ref.read(authProvider).value?.uid;
+
+  Future<void> _bootstrap() async {
+    final uid = _uid;
+    if (uid == null) {
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final history = await _chatRepository.loadMessages(uid);
+      state = state.copyWith(messages: history, isLoading: false);
+
+      _messagesSub?.cancel();
+      _messagesSub = _chatRepository.watchMessages(uid).listen((messages) {
+        state = state.copyWith(messages: messages);
+      });
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'No se pudo cargar historial: $e',
+      );
+    }
+  }
 
   Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+    final uid = _uid;
+    if (uid == null || text.trim().isEmpty) return;
 
-    // Agregar mensaje del usuario
-    final userMessage = Message(
+    final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: text,
       isUser: true,
@@ -87,15 +107,16 @@ class ChatController extends StateNotifier<ChatState> {
       error: null,
     );
 
-    // Modo Básico (sin IA)
+    await _chatRepository.saveMessage(uid, userMessage);
+
     if (!state.config.isProMode) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final botMessage = Message(
+      final botMessage = ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         content: 'Modo básico activo. Configurá OPENAI_API_KEY para usar IA.',
         isUser: false,
         timestamp: DateTime.now(),
       );
+      await _chatRepository.saveMessage(uid, botMessage);
       state = state.copyWith(
         messages: [...state.messages, botMessage],
         isLoading: false,
@@ -103,15 +124,16 @@ class ChatController extends StateNotifier<ChatState> {
       return;
     }
 
-    // Modo Pro (con OpenAI)
     try {
       final response = await _aiService.sendMessage(text);
-      final botMessage = Message(
+      final botMessage = ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         content: response,
         isUser: false,
         timestamp: DateTime.now(),
       );
+
+      await _chatRepository.saveMessage(uid, botMessage);
       state = state.copyWith(
         messages: [...state.messages, botMessage],
         isLoading: false,
@@ -124,8 +146,12 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  void clearChat() {
+  Future<void> clearChat() async {
+    final uid = _uid;
+    if (uid == null) return;
+
     _aiService.clearHistory();
+    await _chatRepository.clearMessages(uid);
     state = state.copyWith(messages: []);
   }
 
@@ -133,20 +159,20 @@ class ChatController extends StateNotifier<ChatState> {
     state = state.copyWith(error: null);
   }
 
-  void toggleMode() {
-    state = state.copyWith(
-      error:
-          'El modo está definido por OPENAI_API_KEY. Configurá esa variable para activar/desactivar Pro.',
-    );
+  @override
+  void dispose() {
+    _messagesSub?.cancel();
+    super.dispose();
   }
 }
 
-// Provider del controller
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
+  ref.watch(authProvider);
   final aiService = ref.watch(aiServiceProvider);
+  final repo = ref.watch(chatRepositoryProvider);
   final config = ref.watch(chatConfigProvider);
-  return ChatController(aiService, config);
+  return ChatController(ref, aiService, repo, config);
 });
 
 final chatMessagesProvider = Provider<List<Message>>(

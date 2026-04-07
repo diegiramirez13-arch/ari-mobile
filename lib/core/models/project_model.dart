@@ -35,6 +35,11 @@ class ProjectModel {
       : null,
   );
 
+  Map<String, dynamic> toMap() => toJson();
+
+  factory ProjectModel.fromMap(Map<String, dynamic> map) =>
+      ProjectModel.fromJson(map);
+
   ProjectModel copyWith({
     String? id,
     String? title,
