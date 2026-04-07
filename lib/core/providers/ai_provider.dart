@@ -2,13 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chat_config.dart';
 import '../services/ai_service.dart';
+import 'profile_provider.dart';
 
 // Provider del servicio
 final aiServiceProvider = Provider<AIService>((ref) => AIService());
 
 // Configuración del chat
 final chatConfigProvider = Provider<ChatConfig>((ref) {
-  return ChatConfig.fromEnvironment();
+  final profile = ref.watch(profileControllerProvider).value;
+  return ChatConfig.fromEnvironment(isProUser: profile?.isProUser ?? false);
 });
 
 class Message {
@@ -64,9 +66,9 @@ class ChatState {
 // Controller con StateNotifier
 class ChatController extends StateNotifier<ChatState> {
   final AIService _aiService;
+  final ChatConfig _config;
 
-  ChatController(this._aiService)
-      : super(ChatState(config: ChatConfig.fromEnvironment()));
+  ChatController(this._aiService, this._config) : super(ChatState(config: _config));
 
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
@@ -143,7 +145,8 @@ class ChatController extends StateNotifier<ChatState> {
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
   final aiService = ref.watch(aiServiceProvider);
-  return ChatController(aiService);
+  final config = ref.watch(chatConfigProvider);
+  return ChatController(aiService, config);
 });
 
 final chatMessagesProvider = Provider<List<Message>>(

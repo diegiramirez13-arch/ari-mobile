@@ -21,3 +21,4 @@ Ayudar a usuarios estándar y Pro a organizar tareas, proyectos y decisiones, co
 ## Estado de desarrollo
 - Avance técnico y checklist: `DEVELOPMENT.md`
 - Guía de setup Firebase: `docs/FIREBASE_SETUP.md`
+- Troubleshooting Windows/ADB: `docs/WINDOWS_ADB_DEBUG.md`

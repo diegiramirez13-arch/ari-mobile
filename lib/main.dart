@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart';
 import 'core/config/environment.dart';
+import 'core/providers/ai_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
 import 'features/chat/chat_screen.dart';
@@ -61,6 +62,7 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   @override
   void initState() {
     super.initState();
+    ref.read(chatConfigProvider);
 
     _authSubscription =
         ref.listenManual<AsyncValue<User?>>(authStateProvider, (previous, next) {

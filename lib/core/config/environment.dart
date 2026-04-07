@@ -24,6 +24,11 @@ class Environment {
   }
 }
 
+class AppEnvironment {
+  static const openAIApiKey = Environment.openAiApiKey;
+  static bool get isProMode => Environment.isProMode;
+}
+
 void configureEnvironment() {
   Environment.validate();
 }

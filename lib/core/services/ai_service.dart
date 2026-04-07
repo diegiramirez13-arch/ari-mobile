@@ -8,12 +8,12 @@ class AIService {
   static const int _maxHistory = 6;
 
   AIService() {
-    if (Environment.isProMode) {
-      _client = OpenAIClient(apiKey: Environment.openAiApiKey);
+    if (AppEnvironment.isProMode) {
+      _client = OpenAIClient(apiKey: AppEnvironment.openAIApiKey);
     }
   }
 
-  bool get isAvailable => Environment.isProMode;
+  bool get isAvailable => AppEnvironment.isProMode;
 
   Future<String> sendMessage(String message) async {
     if (!isAvailable) {

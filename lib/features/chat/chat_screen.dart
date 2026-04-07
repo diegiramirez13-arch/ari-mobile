@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/chat_config.dart';
 import '../../core/providers/ai_provider.dart';
+import '../profile/profile_screen.dart';
+import '../projects/projects_screen.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -53,6 +55,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ],
       ),
       actions: [
+        IconButton(
+          tooltip: 'Proyectos',
+          icon: const Icon(Icons.folder_outlined),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProjectsScreen()),
+            );
+          },
+        ),
+        IconButton(
+          tooltip: 'Perfil',
+          icon: const Icon(Icons.person_outline),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            );
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.delete_outline),
           onPressed: controller.clearChat,
