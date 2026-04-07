@@ -15,6 +15,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
   final _occupationController = TextEditingController();
+  bool _isProUser = false;
 
   @override
   void dispose() {
@@ -33,6 +34,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           name: _nameController.text,
           bio: _bioController.text,
           occupation: _occupationController.text,
+          isProUser: _isProUser,
         );
 
     if (!mounted) {
@@ -65,6 +67,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           occupationController: _occupationController,
           isSaving: false,
           errorMessage: profileError ?? 'No se pudo cargar el perfil.',
+          isProUser: _isProUser,
+          onProModeChanged: (value) => setState(() => _isProUser = value),
           onSave: _saveProfile,
         ),
         data: (profile) {
@@ -72,6 +76,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             _nameController.text = profile?.name ?? '';
             _bioController.text = profile?.bio ?? '';
             _occupationController.text = profile?.occupation ?? '';
+            _isProUser = profile?.isProUser ?? false;
           }
 
           return _ProfileForm(
@@ -81,6 +86,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             occupationController: _occupationController,
             isSaving: profileState.isLoading,
             errorMessage: profileError,
+            isProUser: _isProUser,
+            onProModeChanged: (value) => setState(() => _isProUser = value),
             onSave: _saveProfile,
           );
         },
@@ -96,6 +103,8 @@ class _ProfileForm extends StatelessWidget {
   final TextEditingController occupationController;
   final bool isSaving;
   final String? errorMessage;
+  final bool isProUser;
+  final ValueChanged<bool> onProModeChanged;
   final VoidCallback onSave;
 
   const _ProfileForm({
@@ -105,6 +114,8 @@ class _ProfileForm extends StatelessWidget {
     required this.occupationController,
     required this.isSaving,
     required this.errorMessage,
+    required this.isProUser,
+    required this.onProModeChanged,
     required this.onSave,
   });
 
@@ -155,6 +166,16 @@ class _ProfileForm extends StatelessWidget {
                   hintText: 'Cuéntale a ARI sobre ti (opcional)',
                   border: OutlineInputBorder(),
                 ),
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Modo Pro'),
+                subtitle: const Text(
+                  'Habilita IA avanzada para este usuario cuando haya API key.',
+                ),
+                value: isProUser,
+                onChanged: isSaving ? null : onProModeChanged,
               ),
               const SizedBox(height: 20),
               FilledButton.icon(
