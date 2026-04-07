@@ -1,6 +1,24 @@
 # Paso final: conectar Firebase realmente (Windows + VS Code)
 
-## Ejecutar en orden
+## Paso A: reparar PATH (PowerShell actual)
+
+```powershell
+$env:Path += ";C:\Users\COMPUTADORA\AppData\Local\Pub\Cache\bin;C:\flutter\bin"
+```
+
+## Paso B: reconstruir carpeta Android (si falta)
+
+```powershell
+flutter create --platforms=android .
+```
+
+Si falla por PATH:
+
+```powershell
+C:\flutter\bin\flutter.bat create --platforms=android .
+```
+
+## Paso C: configurar Firebase de verdad
 
 ```powershell
 cd C:\Users\COMPUTADORA\ari-mobile
@@ -13,7 +31,9 @@ Durante `flutterfire configure`:
 - Aceptá opciones por defecto para Android/iOS/Web.
 - Confirmá generación de `lib/firebase_options.dart` real.
 
-## Validar entorno de despliegue
+En `flutterfire configure`, seleccioná el proyecto `ari-mobile`, elegí al menos `android` y `web`, y aceptá los defaults.
+
+## Paso D: validar entorno de despliegue
 
 ```powershell
 flutter doctor --android-licenses
@@ -22,7 +42,7 @@ flutter doctor --android-licenses
 & "C:\Program Files\Android\Android SDK\platform-tools\adb.exe" devices -l
 ```
 
-## Correr la app en el Motorola
+## Paso E: correr la app en el Motorola
 
 ```powershell
 flutter clean
