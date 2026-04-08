@@ -6,16 +6,16 @@
 $env:Path += ";C:\Users\COMPUTADORA\AppData\Local\Pub\Cache\bin;C:\flutter\bin"
 ```
 
-## Paso B: reconstruir carpeta Android (si falta)
+## Paso B: reconstruir carpetas Android + Web (si faltan)
 
 ```powershell
-flutter create --platforms=android .
+flutter create --platforms=android,web .
 ```
 
 Si falla por PATH:
 
 ```powershell
-C:\flutter\bin\flutter.bat create --platforms=android .
+C:\flutter\bin\flutter.bat create --platforms=android,web .
 ```
 
 ## Paso C: configurar Firebase de verdad
@@ -48,6 +48,12 @@ flutter doctor --android-licenses
 flutter clean
 flutter pub get
 flutter run --dart-define=OPENAI_API_KEY=sk-tu_clave_real_aqui
+```
+
+## Paso F: previsualización rápida en Chrome
+
+```powershell
+flutter run -d chrome --dart-define=OPENAI_API_KEY=tu_clave_aqui
 ```
 
 ## Checklist MVP funcional
