@@ -1,12 +1,28 @@
-// Este archivo es generado por FlutterFire CLI
+// Este archivo es generado por FlutterFire CLI.
 // Ejecutar: flutterfire configure
-// Más info: https://firebase.flutter.dev/docs/cli
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    return web;
+    if (kIsWeb) {
+      return web;
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        return ios;
+      case TargetPlatform.macOS:
+        return macos;
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not supported for this platform.',
+        );
+    }
   }
 
   static const FirebaseOptions android = FirebaseOptions(

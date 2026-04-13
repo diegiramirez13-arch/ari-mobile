@@ -24,6 +24,6 @@ class Environment {
   }
 }
 
-void configureEnvironment() {
+Future<void> configureEnvironment() async {
   Environment.validate();
 }

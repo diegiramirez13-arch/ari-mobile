@@ -66,9 +66,5 @@ class AIService {
 
   void clearHistory() => _history.clear();
 
-  void dispose() {
-    if (isAvailable) {
-      _client.close();
-    }
-  }
+  void dispose() {}
 }
