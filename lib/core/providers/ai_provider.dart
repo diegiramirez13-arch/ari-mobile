@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chat_config.dart';
@@ -67,32 +69,36 @@ class ChatState {
 class ChatController extends StateNotifier<ChatState> {
   final ChatRepository _repository;
   final String _userId;
-  ProviderSubscription<AsyncValue<List<ChatMessage>>>? _historySubscription;
+  StreamSubscription<List<ChatMessage>>? _historySubscription;
 
   ChatController(
     this._repository,
     this._userId,
     ChatConfig config,
-  ) : super(ChatState.initial(config));
+  ) : super(ChatState.initial(config)) {
+    _init();
+  }
 
-  void bindHistory(Ref ref) {
+  void _init() {
     if (_userId.isEmpty) {
       state = state.copyWith(isLoading: false);
       return;
     }
 
-    _historySubscription?.close();
-    _historySubscription = ref.listenManual<AsyncValue<List<ChatMessage>>>(
-      chatHistoryMessagesProvider(_userId),
-      (previous, next) {
-        final history = next.value;
-        if (history == null) return;
+    _historySubscription?.cancel();
+    _historySubscription = _repository.getMessages(_userId).listen(
+      (messages) {
         state = state.copyWith(
-          messages: history.reversed.toList(),
+          messages: messages.reversed.toList(),
           isLoading: false,
         );
       },
-      fireImmediately: true,
+      onError: (_) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'No se pudo sincronizar el historial.',
+        );
+      },
     );
   }
 
@@ -174,7 +180,7 @@ class ChatController extends StateNotifier<ChatState> {
 
   @override
   void dispose() {
-    _historySubscription?.close();
+    _historySubscription?.cancel();
     super.dispose();
   }
 }
@@ -186,15 +192,7 @@ final chatControllerProvider =
   final config = ref.watch(chatConfigProvider);
   final userId = ref.watch(currentUserIdProvider) ?? '';
 
-  final controller = ChatController(repository, userId, config);
-  controller.bindHistory(ref);
-  return controller;
-});
-
-final chatHistoryMessagesProvider =
-    StreamProvider.family<List<ChatMessage>, String>((ref, userId) {
-  final firestoreService = ref.watch(firestoreServiceProvider);
-  return firestoreService.getChatHistory(userId);
+  return ChatController(repository, userId, config);
 });
 
 final chatMessagesProvider = Provider<List<ChatMessage>>(
