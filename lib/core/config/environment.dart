@@ -1,29 +1,30 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-class Environment {
-  // API Keys - Inyectadas en tiempo de compilación
-  static const openAiApiKey = String.fromEnvironment('OPENAI_API_KEY');
+class AppEnvironment {
+  static Future<void> setup() async {
+    await dotenv.load(fileName: '.env');
+    validate();
+  }
 
-  // Feature Flags
-  static bool get isProMode => openAiApiKey.isNotEmpty;
+  static String get openAIApiKey => dotenv.env['OPENAI_API_KEY'] ?? '';
+  static bool get isProMode => openAIApiKey.isNotEmpty;
 
-  // Entorno
-  static const env = String.fromEnvironment('ENV', defaultValue: 'dev');
-  static bool get isDev => env == 'dev';
-  static bool get isProd => env == 'prod';
+  static String get currentEnv => dotenv.env['ENV'] ?? 'dev';
+  static bool get isDev => currentEnv == 'dev';
+  static bool get isProd => currentEnv == 'prod';
 
-  // Validación
   static void validate() {
-    if (isProd && openAiApiKey.isEmpty) {
+    if (isProd && openAIApiKey.isEmpty) {
       throw Exception('OPENAI_API_KEY requerida en producción');
     }
 
     if (isDev) {
-      debugPrint('🔧 Environment: $env | Pro mode: $isProMode');
+      debugPrint('🔧 Environment: $currentEnv | Pro mode: $isProMode');
     }
   }
 }
 
 Future<void> configureEnvironment() async {
-  Environment.validate();
+  await AppEnvironment.setup();
 }

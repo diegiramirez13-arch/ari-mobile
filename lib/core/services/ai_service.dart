@@ -6,12 +6,12 @@ class AIService {
   late final OpenAIClient _client;
 
   AIService() {
-    if (Environment.isProMode) {
-      _client = OpenAIClient(apiKey: Environment.openAiApiKey);
+    if (AppEnvironment.isProMode) {
+      _client = OpenAIClient(apiKey: AppEnvironment.openAIApiKey);
     }
   }
 
-  bool get isAvailable => Environment.isProMode;
+  bool get isAvailable => AppEnvironment.isProMode;
 
   Future<String> generateResponse(
     String message, {

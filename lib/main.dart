@@ -20,13 +20,13 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: AriApp(),
+      child: MyApp(),
     ),
   );
 }
 
-class AriApp extends ConsumerWidget {
-  const AriApp({super.key});
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
