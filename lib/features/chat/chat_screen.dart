@@ -95,7 +95,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
-          message.content,
+          message.text,
           style: const TextStyle(color: Colors.white),
         ),
       ),
