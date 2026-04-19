@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chat_config.dart';
 import '../models/chat_message.dart';
+import '../repositories/chat_repository.dart';
 import '../services/ai_service.dart';
-import '../services/firestore_service.dart';
 import 'auth_provider.dart';
 import 'firestore_provider.dart';
 import 'profile_provider.dart';
@@ -12,6 +12,12 @@ typedef Message = ChatMessage;
 
 // Provider del servicio
 final aiServiceProvider = Provider<AIService>((ref) => AIService());
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  return ChatRepository(
+    ref.watch(aiServiceProvider),
+    ref.watch(firestoreServiceProvider),
+  );
+});
 
 // Configuración del chat
 final chatConfigProvider = Provider<ChatConfig>((ref) {
@@ -33,6 +39,13 @@ class ChatState {
     required this.config,
   });
 
+  factory ChatState.initial(ChatConfig config) => ChatState(
+        messages: const [],
+        isLoading: true,
+        error: null,
+        config: config,
+      );
+
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
@@ -52,32 +65,32 @@ class ChatState {
 
 // Controller con StateNotifier
 class ChatController extends StateNotifier<ChatState> {
-  final AIService _aiService;
-  final FirestoreService _firestoreService;
-  final ChatConfig _config;
-  final String? _userId;
+  final ChatRepository _repository;
+  final String _userId;
   ProviderSubscription<AsyncValue<List<ChatMessage>>>? _historySubscription;
 
   ChatController(
-    this._aiService,
-    this._firestoreService,
-    this._config,
+    this._repository,
     this._userId,
-  ) : super(ChatState(config: _config));
+    ChatConfig config,
+  ) : super(ChatState.initial(config));
 
   void bindHistory(Ref ref) {
-    final userId = _userId;
-    if (userId == null) {
+    if (_userId.isEmpty) {
+      state = state.copyWith(isLoading: false);
       return;
     }
 
     _historySubscription?.close();
     _historySubscription = ref.listenManual<AsyncValue<List<ChatMessage>>>(
-      chatHistoryMessagesProvider(userId),
+      chatHistoryMessagesProvider(_userId),
       (previous, next) {
         final history = next.value;
         if (history == null) return;
-        state = state.copyWith(messages: history.reversed.toList());
+        state = state.copyWith(
+          messages: history.reversed.toList(),
+          isLoading: false,
+        );
       },
       fireImmediately: true,
     );
@@ -94,16 +107,15 @@ class ChatController extends StateNotifier<ChatState> {
       timestamp: DateTime.now(),
     );
 
-    final userId = _userId;
-    if (userId != null) {
-      await _firestoreService.saveMessage(userId, userMessage);
-    }
-
     state = state.copyWith(
       messages: [...state.messages, userMessage],
       isLoading: true,
       error: null,
     );
+
+    if (_userId.isNotEmpty) {
+      await _repository.saveMessage(_userId, userMessage);
+    }
 
     // Modo Básico (sin IA)
     if (!state.config.isProMode) {
@@ -114,8 +126,8 @@ class ChatController extends StateNotifier<ChatState> {
         isUser: false,
         timestamp: DateTime.now(),
       );
-      if (userId != null) {
-        await _firestoreService.saveMessage(userId, botMessage);
+      if (_userId.isNotEmpty) {
+        await _repository.saveMessage(_userId, botMessage);
       }
       state = state.copyWith(
         messages: [...state.messages, botMessage],
@@ -126,15 +138,12 @@ class ChatController extends StateNotifier<ChatState> {
 
     // Modo Pro (con OpenAI)
     try {
-      final response = await _aiService.sendMessage(text);
-      final botMessage = ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        text: response,
-        isUser: false,
-        timestamp: DateTime.now(),
+      final botMessage = await _repository.getAIResponse(
+        text,
+        state.messages,
       );
-      if (userId != null) {
-        await _firestoreService.saveMessage(userId, botMessage);
+      if (_userId.isNotEmpty) {
+        await _repository.saveMessage(_userId, botMessage);
       }
       state = state.copyWith(
         messages: [...state.messages, botMessage],
@@ -149,7 +158,6 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   void clearChat() {
-    _aiService.clearHistory();
     state = state.copyWith(messages: []);
   }
 
@@ -174,12 +182,11 @@ class ChatController extends StateNotifier<ChatState> {
 // Provider del controller
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
-  final aiService = ref.watch(aiServiceProvider);
-  final firestoreService = ref.watch(firestoreServiceProvider);
+  final repository = ref.watch(chatRepositoryProvider);
   final config = ref.watch(chatConfigProvider);
-  final userId = ref.watch(currentUserIdProvider);
+  final userId = ref.watch(currentUserIdProvider) ?? '';
 
-  final controller = ChatController(aiService, firestoreService, config, userId);
+  final controller = ChatController(repository, userId, config);
   controller.bindHistory(ref);
   return controller;
 });

@@ -4,8 +4,6 @@ import '../config/environment.dart';
 
 class AIService {
   late final OpenAIClient _client;
-  final List<Map<String, String>> _history = [];
-  static const int _maxHistory = 6;
 
   AIService() {
     if (Environment.isProMode) {
@@ -15,12 +13,13 @@ class AIService {
 
   bool get isAvailable => Environment.isProMode;
 
-  Future<String> sendMessage(String message) async {
+  Future<String> generateResponse(
+    String message, {
+    List<Map<String, String>> history = const [],
+  }) async {
     if (!isAvailable) {
       throw Exception('Modo Pro no disponible - falta API Key');
     }
-
-    _addToHistory('user', message);
 
     try {
       final response = await _client.createChatCompletion(
@@ -32,7 +31,7 @@ class AIService {
                   'Respondé en español rioplatense, máximo 3 oraciones, '
                   'de forma directa y útil.',
             ),
-            ..._history.map((h) {
+            ...history.map((h) {
               final role = h['role']!;
               final content = h['content']!;
               if (role == 'assistant') {
@@ -49,22 +48,15 @@ class AIService {
       );
 
       final content = response.choices.first.message.content;
-      final result = content ?? 'No entendí, ¿podés repetir?';
-      _addToHistory('assistant', result);
-      return result;
+      return content ?? 'No entendí, ¿podés repetir?';
     } catch (e) {
       return 'Error: $e';
     }
   }
 
-  void _addToHistory(String role, String content) {
-    _history.add({'role': role, 'content': content});
-    if (_history.length > _maxHistory) {
-      _history.removeAt(0);
-    }
-  }
+  Future<String> sendMessage(String message) => generateResponse(message);
 
-  void clearHistory() => _history.clear();
+  void clearHistory() {}
 
   void dispose() {}
 }
