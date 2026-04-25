@@ -24,6 +24,7 @@ dependencies:
 
   # HTTP & networking
   dio: ^5.4.0
+  http: ^1.2.0
 
   # Firebase (preparado para paso 2)
   firebase_core: ^2.24.0
