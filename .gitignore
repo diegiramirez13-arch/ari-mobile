@@ -1,0 +1,16 @@
+﻿# Environment / secrets
+.env
+.env.*
+*.env
+
+# Firebase credentials
+google-services.json
+GoogleService-Info.plist
+
+# Keys / certs
+*.pem
+*.key
+*.p12
+*.jks
+firebase-adminsdk*.json
+*.local
