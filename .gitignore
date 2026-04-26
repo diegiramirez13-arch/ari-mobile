@@ -1,0 +1,29 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / Environment
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.p12
+*.jks
+firebase-adminsdk*.json
+GoogleService-Info.plist
+google-services.json
+
+# Local overrides
+*.local

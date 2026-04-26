@@ -11,6 +11,7 @@ import 'features/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Debe ejecutarse al inicio para cargar llaves vía --dart-define.
   configureEnvironment();
 
   await Firebase.initializeApp(
@@ -32,14 +33,8 @@ class AriApp extends StatelessWidget {
     return MaterialApp(
       title: 'ARI',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(
+      theme: ThemeData.dark().copyWith(
         useMaterial3: true,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.blue.shade700,
-          secondary: Colors.cyan.shade400,
-          surface: Colors.grey.shade900,
-          error: Colors.red.shade400,
-        ),
       ),
       home: const AuthWrapper(),
     );
