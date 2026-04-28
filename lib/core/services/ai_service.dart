@@ -83,7 +83,54 @@ class AIService {
 Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones. Si detectás que el usuario quiere crear un proyecto, terminá tu respuesta con: [PROYECTO:Nombre del proyecto].
 ''';
 
+  @visibleForTesting
+  static List<ChatCompletionMessage> buildMessagesForRequest({
+    required List<AIMessage> history,
+    required String userMessage,
+    required String systemPrompt,
+  }) {
+    final messages = <ChatCompletionMessage>[
+      ChatCompletionMessage.system(content: systemPrompt),
+    ];
+
+    final recent =
+        history.length > 6 ? history.sublist(history.length - 6) : history;
+    for (final msg in recent) {
+      if (msg.role == 'user') {
+        messages.add(ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string(msg.content),
+        ));
+      } else {
+        messages.add(ChatCompletionMessage.assistant(content: msg.content));
+      }
+    }
+
+    final shouldAppendUser = recent.isEmpty ||
+        recent.last.role != 'user' ||
+        recent.last.content.trim() != userMessage.trim();
+
+    if (shouldAppendUser) {
+      messages.add(ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.string(userMessage),
+      ));
+    }
+
+    return messages;
+  }
+
+  Future<AIResponse> generateResponse({
+    required String userMessage,
+    required List<AIMessage> history,
+  }) async {
+    if (_client == null) return AIResponse.error('IA no inicializada');
+
     try {
+      final messages = buildMessagesForRequest(
+        history: history,
+        userMessage: userMessage,
+        systemPrompt: _systemPrompt,
+      );
+
       final response = await _client!.createChatCompletion(
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.modelId('gpt-4o-mini'),

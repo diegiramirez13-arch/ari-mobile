@@ -18,22 +18,27 @@ echo "OPENAI_API_KEY=sk-dev-tu-key" > .env
 flutter run --dart-define-from-file=.env
 ```
 
-## Reglas obligatorias antes de publicar el repositorio
+### GitHub Actions (QA/PROD)
 
-- Nunca poner PATs o API keys en comandos como `git remote set-url https://TOKEN@github.com/...`.
-- Si un token se expone por consola, historial o capturas, revocarlo inmediatamente en GitHub.
-- Mantener el remoto sin credenciales embebidas: `https://github.com/<owner>/<repo>.git`.
-- Subir secretos solo vía GitHub Actions Secrets / entorno de ejecución, nunca al código.
+Configurar en **Settings → Secrets and variables → Actions**:
 
-## Verificación rápida
+- `OPENAI_API_KEY_QA`
+- `OPENAI_API_KEY_PROD`
 
-```bash
-# Confirmar remoto sin token inline
-git remote -v
+> Recomendación: mapear el secreto correcto según rama/entorno y pasarlo a `--dart-define=OPENAI_API_KEY=...` en el workflow de build.
 
-# Confirmar ignore de secretos comunes
-git check-ignore -v .env .env.local .env.production google-services.json GoogleService-Info.plist android/app/google-services.json
+### Codespaces / Dev Container
 
-# Buscar patrones sensibles en tracked files
-git grep -nE "ghp_|AIza|sk-[A-Za-z0-9]|OPENAI_API_KEY|api[_-]?key|secret|token|password" -- . ":(exclude).gitignore"
+En `.devcontainer/devcontainer.json` se propaga la key local:
+
+```json
+"remoteEnv": {
+  "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}"
+}
 ```
+
+## Checklist antes de commit
+
+- [ ] `.env` está en `.gitignore`
+- [ ] No hay keys hardcodeadas en código
+- [ ] Se usa `String.fromEnvironment` para obtener `OPENAI_API_KEY`

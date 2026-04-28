@@ -6,19 +6,37 @@ import '../models/chat_config.dart';
 import '../models/chat_message.dart';
 import '../repositories/chat_repository.dart';
 import '../services/ai_service.dart';
-import 'auth_provider.dart';
-import 'firestore_provider.dart';
-import 'profile_provider.dart';
 
-typedef Message = ChatMessage;
+class ChatConfig {
+  final bool hasKey;
+  final bool enableAI;
 
-// Provider del servicio
-final aiServiceProvider = Provider<AIService>((ref) => AIService());
-final chatRepositoryProvider = Provider<ChatRepository>((ref) {
-  return ChatRepository(
-    ref.watch(aiServiceProvider),
-    ref.watch(firestoreServiceProvider),
+  const ChatConfig({required this.hasKey, required this.enableAI});
+}
+
+final openAIApiKeyProvider = Provider<String>(
+  (ref) => AppEnvironment.openAIApiKey,
+);
+
+final chatConfigProvider = Provider<ChatConfig>((ref) {
+  final key = ref.watch(openAIApiKeyProvider);
+  final enableAI = AppEnvironment.enableAI;
+  return ChatConfig(
+    hasKey: enableAI && key.isNotEmpty,
+    enableAI: enableAI,
   );
+});
+
+final aiServiceProvider = Provider<AIService?>((ref) {
+  final config = ref.watch(chatConfigProvider);
+  final key = ref.watch(openAIApiKeyProvider);
+
+  if (!config.enableAI || key.isEmpty) {
+    debugPrint('🔧 Modo IA deshabilitado - API key no configurada');
+    return null;
+  }
+
+  return AIService(config: AIServiceConfig(apiKey: key));
 });
 
 final chatConfigProvider = Provider<ChatConfig>((ref) {
@@ -27,6 +45,7 @@ final chatConfigProvider = Provider<ChatConfig>((ref) {
 
 // Estado del chat
 class ChatState {
+  static const _noError = Object();
   final List<ChatMessage> messages;
   final bool isLoading;
   final bool isProMode;
@@ -49,30 +68,28 @@ class ChatState {
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
-    bool? isProMode,
-    String? error,
-    bool clearError = false,
-  }) {
-    return ChatState(
-      messages: messages ?? this.messages,
-      isLoading: isLoading ?? this.isLoading,
-      isProMode: isProMode ?? this.isProMode,
-      error: clearError ? null : (error ?? this.error),
-    );
-  }
+    ChatMode? mode,
+    Object? error = _noError,
+    bool? canSwitchToPro,
+  }) =>
+      ChatState(
+        messages: messages ?? this.messages,
+        isLoading: isLoading ?? this.isLoading,
+        mode: mode ?? this.mode,
+        error: identical(error, _noError) ? this.error : error as String?,
+        canSwitchToPro: canSwitchToPro ?? this.canSwitchToPro,
+      );
+
+  bool get isProMode => mode == ChatMode.pro;
 }
 
 class ChatController extends StateNotifier<ChatState> {
-  final ChatRepository _repository;
-  final String _userId;
-  StreamSubscription<List<ChatMessage>>? _historySubscription;
+  final Ref _ref;
+  AIService? get _ai => _ref.read(aiServiceProvider);
+  bool get _hasAIKey => _ref.read(chatConfigProvider).hasKey;
 
-  ChatController(
-    this._repository,
-    this._userId,
-    ChatConfig config,
-  ) : super(ChatState.initial(config)) {
-    _init();
+  ChatController(this._ref) : super(const ChatState()) {
+    _initialize();
   }
 
   void _init() {
@@ -99,15 +116,13 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   Future<void> sendMessage(String text) async {
-    final cleanedText = text.trim();
-    if (cleanedText.isEmpty || state.isLoading) {
-      return;
-    }
+    final normalizedText = text.trim();
+    if (normalizedText.isEmpty) return;
 
     // Agregar mensaje del usuario
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: text,
+      content: normalizedText,
       isUser: true,
       timestamp: DateTime.now(),
     );
@@ -119,9 +134,8 @@ class ChatController extends StateNotifier<ChatState> {
       clearError: true,
     );
 
-    if (_userId.isNotEmpty) {
-      await _repository.saveMessage(_userId, userMessage);
-    }
+    try {
+      final response = await _generateResponse(normalizedText);
 
     // Modo Básico (sin IA)
     if (!state.config.isProMode) {
