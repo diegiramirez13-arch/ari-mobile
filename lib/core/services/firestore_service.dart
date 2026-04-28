@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/chat_message.dart';
 import '../models/project_model.dart';
 import '../models/user_profile_model.dart';
 
@@ -9,6 +10,8 @@ class FirestoreService {
   static const String usersCollection = 'users';
   static const String projectsCollection = 'projects';
   static const String chatsCollection = 'chats';
+  static const String profileCollection = 'profile';
+  static const String profileDocId = 'data';
 
   // ============ PROJECTS ============
   Future<void> saveProject(String userId, ProjectModel project) async {
@@ -60,23 +63,21 @@ class FirestoreService {
           .collection(usersCollection)
           .doc(userId)
           .collection(chatsCollection)
-          .add({
-        'message': message,
-        'isUser': isUser,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+          .doc(message.id)
+          .set(message.toMap());
     } catch (e) {
       print('Error guardando mensaje: $e');
       rethrow;
     }
   }
 
-  Stream<List<Map<String, dynamic>>> getChatHistoryStream(String userId) {
+  Stream<List<ChatMessage>> getChatHistory(String userId) {
     return _db
         .collection(usersCollection)
         .doc(userId)
         .collection(chatsCollection)
         .orderBy('timestamp', descending: true)
+        .limit(20)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }

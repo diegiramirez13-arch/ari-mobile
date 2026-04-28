@@ -21,6 +21,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
+  void _sendMessage() {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+
+    ref.read(chatControllerProvider.notifier).sendMessage(text);
+    _textController.clear();
+    _focusNode.requestFocus();
+    _scrollToBottom();
+  }
+
+  void _clearError() {
+    ref.read(chatControllerProvider.notifier).clearError();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(chatControllerProvider);
@@ -204,9 +218,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ],
             ),
+            const SizedBox(width: 8),
+            FloatingActionButton(
+              mini: true,
+              onPressed: state.isLoading ? null : _sendMessage,
+              child: state.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showClearDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Limpiar conversación?'),
+        content: const Text('Se borrará todo el historial de mensajes.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
           ),
         ],
       ),
     );
+  }
+
+  void _navigateTo(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+}
+
+    ref.read(chatControllerProvider.notifier).sendMessage(trimmed);
+    _controller.clear();
   }
 }
