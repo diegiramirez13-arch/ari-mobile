@@ -1,69 +1,133 @@
+import 'package:flutter/foundation.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-import '../config/environment.dart';
+enum AIProvider { openAI, mistral }
+
+class AIServiceConfig {
+  final String apiKey;
+  final AIProvider provider;
+  final String model;
+  final double temperature;
+  final int maxTokens;
+
+  const AIServiceConfig({
+    required this.apiKey,
+    this.provider = AIProvider.openAI,
+    this.model = 'gpt-4o-mini',
+    this.temperature = 0.7,
+    this.maxTokens = 1000,
+  });
+}
+
+class AIMessage {
+  final String role;
+  final String content;
+  final DateTime timestamp;
+
+  AIMessage({
+    required this.role,
+    required this.content,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'role': role,
+        'content': content,
+        'timestamp': timestamp.toIso8601String(),
+      };
+}
+
+class AIResponse {
+  final String text;
+  final bool isError;
+  final String? errorMessage;
+  final int? tokensUsed;
+
+  AIResponse({
+    required this.text,
+    this.isError = false,
+    this.errorMessage,
+    this.tokensUsed,
+  });
+
+  factory AIResponse.error(String message) => AIResponse(
+        text: 'Lo siento, hubo un error. ¿Podés intentar de nuevo?',
+        isError: true,
+        errorMessage: message,
+      );
+}
 
 class AIService {
-  late final OpenAIClient _client;
-  final List<Map<String, String>> _history = [];
-  static const int _maxHistory = 6;
+  final AIServiceConfig config;
+  OpenAIClient? _client;
 
-  AIService() {
-    if (Environment.isProMode) {
-      _client = OpenAIClient(apiKey: Environment.openAiApiKey);
+  AIService({required this.config}) {
+    _initializeClient();
+  }
+
+  void _initializeClient() {
+    try {
+      _client = OpenAIClient(apiKey: config.apiKey);
+    } catch (e) {
+      debugPrint('Error inicializando OpenAI: $e');
     }
   }
 
-  bool get isAvailable => Environment.isProMode;
+  String get _systemPrompt => '''
+Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones. Si detectás que el usuario quiere crear un proyecto, terminá tu respuesta con: [PROYECTO:Nombre del proyecto].
+''';
 
-  Future<String> sendMessage(String message) async {
-    if (!isAvailable) {
-      throw Exception('Modo Pro no disponible - falta API Key');
-    }
-
-    _addToHistory('user', message);
+  Future<AIResponse> generateResponse({
+    required String userMessage,
+    required List<AIMessage> history,
+  }) async {
+    if (_client == null) return AIResponse.error('IA no inicializada');
 
     try {
-      final response = await _client.createChatCompletion(
-        request: CreateChatCompletionRequest(
-          model: ChatCompletionModel.modelId('gpt-4o-mini'),
-          messages: [
-            const ChatCompletionMessage.system(
-              content: 'Sos ARI, un asistente de productividad. '
-                  'Respondé en español rioplatense, máximo 3 oraciones, '
-                  'de forma directa y útil.',
+      final messages = <ChatCompletionMessage>[
+        ChatCompletionMessage.system(content: _systemPrompt),
+      ];
+
+      final recent =
+          history.length > 6 ? history.sublist(history.length - 6) : history;
+      for (final msg in recent) {
+        if (msg.role == 'user') {
+          messages.add(
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string(msg.content),
             ),
-            ..._history.map((h) {
-              final role = h['role']!;
-              final content = h['content']!;
-              if (role == 'assistant') {
-                return ChatCompletionMessage.assistant(content: content);
-              }
-              return ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string(content),
-              );
-            }),
-          ],
-          temperature: 0.7,
-          maxTokens: 1000,
+          );
+        } else {
+          messages.add(ChatCompletionMessage.assistant(content: msg.content));
+        }
+      }
+
+      messages.add(
+        ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string(userMessage),
         ),
       );
 
-      final content = response.choices.first.message.content;
-      final result = content ?? 'No entendí, ¿podés repetir?';
-      _addToHistory('assistant', result);
-      return result;
+      final response = await _client!.createChatCompletion(
+        request: CreateChatCompletionRequest(
+          model: ChatCompletionModel.modelId(config.model),
+          messages: messages,
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
+        ),
+      );
+
+      final text = response.choices.first.message.content ?? '';
+      return AIResponse(
+        text: text.replaceAll(RegExp(r'\[PROYECTO:.*?\]'), '').trim(),
+        tokensUsed: response.usage?.totalTokens,
+      );
     } catch (e) {
-      return 'Error: $e';
+      return AIResponse.error(e.toString());
     }
   }
 
-  void _addToHistory(String role, String content) {
-    _history.add({'role': role, 'content': content});
-    if (_history.length > _maxHistory) {
-      _history.removeAt(0);
-    }
-  }
+  bool get isAvailable => _client != null;
 
-  void clearHistory() => _history.clear();
-
+  void dispose() => _client?.close();
 }

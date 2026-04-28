@@ -1,11 +1,11 @@
-// Este archivo es generado por FlutterFire CLI
-// Ejecutar: flutterfire configure
-// Más info: https://firebase.flutter.dev/docs/cli
+// Generated-like Firebase options.
+// TODO: Run `flutterfire configure` to generate platform-specific Android/iOS/macOS values.
 
 import 'dart:io' show Platform;
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
@@ -13,49 +13,55 @@ class DefaultFirebaseOptions {
       return web;
     }
 
-    if (Platform.isAndroid) {
-      return android;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        return ios;
+      case TargetPlatform.macOS:
+        return macos;
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not configured for this platform. '
+          'Run flutterfire configure.',
+        );
     }
-
-    if (Platform.isIOS) {
-      return ios;
-    }
-
-    throw UnsupportedError('Plataforma no soportada para FirebaseOptions.');
   }
 
+  // NOTE: Values below map to provided Firebase project configs (Web + Android + iOS).
+  // Run `flutterfire configure` to complete macOS and any remaining platform-specific fields.
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REEMPLAZAR_CON_TU_API_KEY',
-    appId: 'REEMPLAZAR_CON_TU_APP_ID',
-    messagingSenderId: 'REEMPLAZAR_CON_TU_MESSAGING_SENDER_ID',
-    projectId: 'REEMPLAZAR_CON_TU_PROJECT_ID',
-    databaseURL: 'REEMPLAZAR_CON_TU_DATABASE_URL',
+    apiKey: 'AIzaSyA0WKRADKnPd5NStDKAVLjXlR-wCHa8v20',
+    appId: '1:220155676506:android:f154183365e59b0ae6d563',
+    messagingSenderId: '220155676506',
+    projectId: 'ari-mobile-bf746',
+    storageBucket: 'ari-mobile-bf746.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'REEMPLAZAR_CON_TU_API_KEY',
-    appId: 'REEMPLAZAR_CON_TU_APP_ID',
-    messagingSenderId: 'REEMPLAZAR_CON_TU_MESSAGING_SENDER_ID',
-    projectId: 'REEMPLAZAR_CON_TU_PROJECT_ID',
-    databaseURL: 'REEMPLAZAR_CON_TU_DATABASE_URL',
-    iosBundleId: 'REEMPLAZAR_CON_TU_IOS_BUNDLE_ID',
+    apiKey: 'AIzaSyD0-zoc2zn6zVcP9J-mv7su9-7JTj-7ESU',
+    appId: '1:220155676506:ios:268ef50d08ad46f5e6d563',
+    messagingSenderId: '220155676506',
+    projectId: 'ari-mobile-bf746',
+    storageBucket: 'ari-mobile-bf746.firebasestorage.app',
+    iosBundleId: 'com.ari.mobile',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'REEMPLAZAR_CON_TU_API_KEY',
-    appId: 'REEMPLAZAR_CON_TU_APP_ID',
-    messagingSenderId: 'REEMPLAZAR_CON_TU_MESSAGING_SENDER_ID',
-    projectId: 'REEMPLAZAR_CON_TU_PROJECT_ID',
-    authDomain: 'REEMPLAZAR_CON_TU_AUTH_DOMAIN',
-    databaseURL: 'REEMPLAZAR_CON_TU_DATABASE_URL',
-    storageBucket: 'REEMPLAZAR_CON_TU_STORAGE_BUCKET',
+    apiKey: 'AIzaSyDp5jFMoyznxMUHHy3O9U7i1I4sTu7x2Fk',
+    appId: '1:220155676506:web:d0f99f879fcc68d7e6d563',
+    messagingSenderId: '220155676506',
+    projectId: 'ari-mobile-bf746',
+    authDomain: 'ari-mobile-bf746.firebaseapp.com',
+    storageBucket: 'ari-mobile-bf746.firebasestorage.app',
   );
 
-  // SETUP INSTRUCTIONS:
-  // 1. Go to https://console.firebase.google.com
-  // 2. Create your Firebase project
-  // 3. Add Android, iOS, and Web apps
-  // 4. Download google-services.json and GoogleService-Info.plist
-  // 5. Run: flutterfire configure
-  // 6. This file will be auto-updated with your credentials
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyDp5jFMoyznxMUHHy3O9U7i1I4sTu7x2Fk',
+    appId: '1:220155676506:web:d0f99f879fcc68d7e6d563',
+    messagingSenderId: '220155676506',
+    projectId: 'ari-mobile-bf746',
+    storageBucket: 'ari-mobile-bf746.firebasestorage.app',
+    iosBundleId: 'com.ari.mobile.macos',
+  );
 }

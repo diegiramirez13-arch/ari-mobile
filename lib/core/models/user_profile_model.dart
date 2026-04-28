@@ -3,7 +3,6 @@ class UserProfileModel {
   final String name;
   final String? bio;
   final String? occupation;
-  final bool isProUser;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -12,7 +11,6 @@ class UserProfileModel {
     required this.name,
     this.bio,
     this.occupation,
-    this.isProUser = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -24,7 +22,6 @@ class UserProfileModel {
       name: '',
       bio: null,
       occupation: null,
-      isProUser: false,
       createdAt: now,
       updatedAt: now,
     );
@@ -34,7 +31,6 @@ class UserProfileModel {
     String? name,
     String? bio,
     String? occupation,
-    bool? isProUser,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -43,7 +39,6 @@ class UserProfileModel {
       name: name ?? this.name,
       bio: bio ?? this.bio,
       occupation: occupation ?? this.occupation,
-      isProUser: isProUser ?? this.isProUser,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -55,7 +50,6 @@ class UserProfileModel {
       'name': name,
       'bio': bio,
       'occupation': occupation,
-      'isProUser': isProUser,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -67,7 +61,6 @@ class UserProfileModel {
       name: map['name'] as String? ?? '',
       bio: map['bio'] as String?,
       occupation: map['occupation'] as String?,
-      isProUser: map['isProUser'] as bool? ?? false,
       createdAt: DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.now(),
       updatedAt: DateTime.tryParse(map['updatedAt'] as String? ?? '') ??

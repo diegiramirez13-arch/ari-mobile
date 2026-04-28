@@ -1,158 +1,212 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/chat_config.dart';
+import '../config/environment.dart';
 import '../services/ai_service.dart';
-import 'profile_provider.dart';
 
-// Provider del servicio
-final aiServiceProvider = Provider<AIService>((ref) => AIService());
+class ChatConfig {
+  final bool hasKey;
 
-// Configuración del chat
+  const ChatConfig({required this.hasKey});
+}
+
 final chatConfigProvider = Provider<ChatConfig>((ref) {
-  final profile = ref.watch(profileControllerProvider).value;
-  return ChatConfig.fromEnvironment(isProUser: profile?.isProUser ?? false);
+  return ChatConfig(hasKey: AppEnvironment.hasOpenAiKey);
 });
 
-class Message {
-  final String id;
+final aiServiceProvider = Provider<AIService?>((ref) {
+  final apiKey = AppEnvironment.openAiApiKey;
+  if (apiKey.trim().isEmpty) {
+    debugPrint('⚠️ OPENAI_API_KEY no configurada');
+    return null;
+  }
+
+  final service = AIService(config: AIServiceConfig(apiKey: apiKey));
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+class ChatMessage {
   final String content;
   final bool isUser;
-  final DateTime timestamp;
   final bool isError;
+  final DateTime timestamp;
 
-  Message({
-    required this.id,
+  const ChatMessage({
     required this.content,
     required this.isUser,
-    required this.timestamp,
     this.isError = false,
+    required this.timestamp,
   });
 }
 
-// Alias de compatibilidad con UI existente
-typedef ChatMessage = Message;
-
-// Estado del chat
 class ChatState {
-  final List<Message> messages;
+  final List<ChatMessage> messages;
   final bool isLoading;
+  final bool isProMode;
   final String? error;
-  final ChatConfig config;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
+    this.isProMode = false,
     this.error,
-    required this.config,
   });
 
   ChatState copyWith({
-    List<Message>? messages,
+    List<ChatMessage>? messages,
     bool? isLoading,
+    bool? isProMode,
     String? error,
-    ChatConfig? config,
+    bool clearError = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
-      config: config ?? this.config,
+      isProMode: isProMode ?? this.isProMode,
+      error: clearError ? null : (error ?? this.error),
+    );
+  }
+}
+
+class ChatController extends StateNotifier<ChatState> {
+  final Ref ref;
+
+  ChatController(this.ref) : super(const ChatState()) {
+    _initializeChat();
+  }
+
+  AIService? get _aiService => ref.read(aiServiceProvider);
+
+  void _initializeChat() {
+    state = state.copyWith(
+      messages: [
+        ChatMessage(
+          content: '¡Hola! Soy ARI. ¿Qué querés organizar hoy?',
+          isUser: false,
+          timestamp: DateTime.now(),
+        ),
+      ],
+      clearError: true,
     );
   }
 
-  bool get isProMode => config.isProMode;
-}
-
-// Controller con StateNotifier
-class ChatController extends StateNotifier<ChatState> {
-  final AIService _aiService;
-  final ChatConfig _config;
-
-  ChatController(this._aiService, this._config) : super(ChatState(config: _config));
-
   Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+    final cleanedText = text.trim();
+    if (cleanedText.isEmpty || state.isLoading) {
+      return;
+    }
 
-    // Agregar mensaje del usuario
-    final userMessage = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      content: text,
+    final userMessage = ChatMessage(
+      content: cleanedText,
       isUser: true,
       timestamp: DateTime.now(),
     );
 
+    final updatedMessages = [...state.messages, userMessage];
     state = state.copyWith(
-      messages: [...state.messages, userMessage],
+      messages: updatedMessages,
       isLoading: true,
-      error: null,
+      clearError: true,
     );
 
-    // Modo Básico (sin IA)
-    if (!state.config.isProMode) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      final botMessage = Message(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        content: 'Modo básico activo. Configurá OPENAI_API_KEY para usar IA.',
-        isUser: false,
-        timestamp: DateTime.now(),
-      );
-      state = state.copyWith(
-        messages: [...state.messages, botMessage],
-        isLoading: false,
-      );
-      return;
-    }
-
-    // Modo Pro (con OpenAI)
     try {
-      final response = await _aiService.sendMessage(text);
-      final botMessage = Message(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        content: response,
-        isUser: false,
-        timestamp: DateTime.now(),
+      if (!state.isProMode || _aiService == null) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        final fallbackReply = _basicReply(updatedMessages.length);
+        _appendAssistantMessage(fallbackReply);
+        return;
+      }
+
+      final history = updatedMessages
+          .map(
+            (m) => AIMessage(
+              role: m.isUser ? 'user' : 'assistant',
+              content: m.content,
+              timestamp: m.timestamp,
+            ),
+          )
+          .toList();
+
+      final response = await _aiService!.generateResponse(
+        userMessage: cleanedText,
+        history: history,
       );
-      state = state.copyWith(
-        messages: [...state.messages, botMessage],
-        isLoading: false,
-      );
+
+      if (response.isError) {
+        _appendAssistantMessage(
+          response.text,
+          isError: true,
+          error: response.errorMessage ?? 'No se pudo obtener respuesta de IA.',
+        );
+        return;
+      }
+
+      _appendAssistantMessage(response.text);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
+      _appendAssistantMessage(
+        'Lo siento, hubo un problema procesando tu mensaje.',
+        isError: true,
         error: e.toString(),
       );
     }
   }
 
-  void clearChat() {
-    _aiService.clearHistory();
-    state = state.copyWith(messages: []);
+  String _basicReply(int seed) {
+    final responses = [
+      '¡Interesante! ¿Cómo te gustaría empezar?',
+      'Dale, dividamos eso en pasos. ¿Cuál es el primero?',
+      'Perfecto. ¿Querés que te cree un proyecto para organizarlo?',
+      'Entendido. ¿Tenés fecha límite para esto?',
+    ];
+    return responses[seed % responses.length];
   }
 
-  void clearError() {
-    state = state.copyWith(error: null);
+  void _appendAssistantMessage(
+    String text, {
+    bool isError = false,
+    String? error,
+  }) {
+    state = state.copyWith(
+      messages: [
+        ...state.messages,
+        ChatMessage(
+          content: text,
+          isUser: false,
+          isError: isError,
+          timestamp: DateTime.now(),
+        ),
+      ],
+      isLoading: false,
+      error: error,
+      clearError: !isError,
+    );
   }
 
   void toggleMode() {
-    state = state.copyWith(
-      error:
-          'El modo está definido por OPENAI_API_KEY. Configurá esa variable para activar/desactivar Pro.',
-    );
+    final hasKey = ref.read(chatConfigProvider).hasKey;
+    if (!hasKey) {
+      state = state.copyWith(
+        error: 'No hay OPENAI_API_KEY configurada para activar modo Pro.',
+      );
+      return;
+    }
+
+    state = state.copyWith(isProMode: !state.isProMode, clearError: true);
+  }
+
+  void clearChat() {
+    final wasPro = state.isProMode;
+    state = ChatState(isProMode: wasPro);
+    _initializeChat();
+  }
+
+  void clearError() {
+    state = state.copyWith(clearError: true);
   }
 }
 
-// Provider del controller
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
-  final aiService = ref.watch(aiServiceProvider);
-  final config = ref.watch(chatConfigProvider);
-  return ChatController(aiService, config);
+  return ChatController(ref);
 });
-
-final chatMessagesProvider = Provider<List<Message>>(
-  (ref) => ref.watch(chatControllerProvider).messages,
-);
-
-final chatIsLoadingProvider = Provider<bool>(
-  (ref) => ref.watch(chatControllerProvider).isLoading,
-);
