@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 enum AIProvider { openAI, mistral }
@@ -58,73 +57,54 @@ class AIResponse {
 }
 
 class AIService {
+  final OpenAIClient? _client;
+
+  // Única definición del system prompt.
   static const String _systemPrompt =
-      'Sos ARI, Asistente de Inteligencia Aplicada. '
-      'PRINCIPIO: Acción > Charla. '
-      'Si el usuario quiere iniciar un proyecto, incluí al final: '
-      '[ACTION:CREATE_PROJECT:Nombre]. '
-      'Respondé en español rioplatense, breve y al punto.';
+      'Sos ARI (Asistente de Inteligencia Aplicada). Filosofía: Acción > Charla. '
+      'Respuestas cortas, técnicas y orientadas a la ejecución. '
+      'Creado en Villa María, Córdoba, Argentina.';
 
-  late final OpenAIClient _client;
+  AIService({String? apiKey})
+      : _client = (apiKey != null && apiKey.isNotEmpty)
+            ? OpenAIClient(apiKey: apiKey)
+            : null;
 
-  AIService() {
-    if (Environment.openAiApiKey.isNotEmpty) {
-      _client = OpenAIClient(apiKey: Environment.openAiApiKey);
+  bool get isAvailable => _client != null;
+
+  Future<String> generateResponse(String message) async {
+    if (!isAvailable) {
+      if (message.toLowerCase().contains('proyecto')) {
+        return 'Smart Roadmap generado: Iniciando estructura local...';
+      }
+      return 'Entendido. Procesando en modo Core (Local).';
     }
-  }
-
-  Future<String> generateResponse(List<Map<String, String>> history) async {
-    if (Environment.openAiApiKey.isEmpty) {
-      return 'Error: No se detectó la llave de ARI Pro. Verificá tu configuración.';
-    }
-  }
-
-  String get _systemPrompt => '''
-Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones. Si detectás que el usuario quiere crear un proyecto, terminá tu respuesta con: [PROYECTO:Nombre del proyecto].
-''';
 
     try {
-      final response = await _client.createChatCompletion(
+      final res = await _client!.createChatCompletion(
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.modelId('gpt-4o-mini'),
           messages: [
             const ChatCompletionMessage.system(content: _systemPrompt),
-            ...history.map((msg) {
-              final role = msg['role'] ?? 'user';
-              final content = msg['content'] ?? '';
-              if (role == 'assistant') {
-                return ChatCompletionMessage.assistant(content: content);
-              }
-              return ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string(content),
-              );
-            }),
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string(message),
+            ),
           ],
           temperature: 0.7,
-          maxTokens: 1000,
         ),
       );
 
-      return response.choices.first.message.content ??
-          'ARI no pudo procesar la idea.';
-    } on OpenAIClientException catch (e) {
-      return 'Fallo en la conexión Pro: ${e.message}';
-    } catch (e) {
-      return 'Error inesperado en el motor: $e';
+      return res.choices.first.message.content ?? 'Sin respuesta de ARI Pro.';
+    } catch (_) {
+      return 'Error de red: No se pudo conectar con la Inteligencia Híbrida.';
     }
   }
 
-  Future<String> sendMessage(String message) {
-    return generateResponse([
-      {'role': 'user', 'content': message},
-    ]);
-  }
+  Future<String> sendMessage(String message) => generateResponse(message);
 
   void clearHistory() {}
 
   void dispose() {
-    if (Environment.openAiApiKey.isNotEmpty) {
-      _client.close();
-    }
+    _client?.close();
   }
 }
