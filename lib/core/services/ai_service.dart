@@ -58,65 +58,24 @@ class AIResponse {
 }
 
 class AIService {
+  final AIServiceConfig config;
   OpenAIClient? _client;
-  final List<Map<String, String>> _history = [];
-  static const int _maxHistory = 6;
 
-  AIService() {
-    if (AppEnvironment.isProMode) {
-      _client = OpenAIClient(apiKey: AppEnvironment.openAIApiKey);
-    }
+  AIService({required this.config}) {
+    _initializeClient();
   }
 
-  bool get isAvailable => AppEnvironment.isProMode;
-
-  Future<String> generateResponse(
-    String message, {
-    List<Map<String, String>> history = const [],
-  }) async {
-    if (!isAvailable) {
-      return 'El modo Pro no está configurado. Por favor, verificá tu API Key.';
+  void _initializeClient() {
+    try {
+      _client = OpenAIClient(apiKey: config.apiKey);
+    } catch (e) {
+      debugPrint('Error inicializando OpenAI: $e');
     }
   }
 
   String get _systemPrompt => '''
 Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones. Si detectás que el usuario quiere crear un proyecto, terminá tu respuesta con: [PROYECTO:Nombre del proyecto].
 ''';
-
-  @visibleForTesting
-  static List<ChatCompletionMessage> buildMessagesForRequest({
-    required List<AIMessage> history,
-    required String userMessage,
-    required String systemPrompt,
-  }) {
-    final messages = <ChatCompletionMessage>[
-      ChatCompletionMessage.system(content: systemPrompt),
-    ];
-
-    final recent =
-        history.length > 6 ? history.sublist(history.length - 6) : history;
-    for (final msg in recent) {
-      if (msg.role == 'user') {
-        messages.add(ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(msg.content),
-        ));
-      } else {
-        messages.add(ChatCompletionMessage.assistant(content: msg.content));
-      }
-    }
-
-    final shouldAppendUser = recent.isEmpty ||
-        recent.last.role != 'user' ||
-        recent.last.content.trim() != userMessage.trim();
-
-    if (shouldAppendUser) {
-      messages.add(ChatCompletionMessage.user(
-        content: ChatCompletionUserMessageContent.string(userMessage),
-      ));
-    }
-
-    return messages;
-  }
 
   Future<AIResponse> generateResponse({
     required String userMessage,
@@ -125,49 +84,50 @@ Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos 
     if (_client == null) return AIResponse.error('IA no inicializada');
 
     try {
-      final messages = buildMessagesForRequest(
-        history: history,
-        userMessage: userMessage,
-        systemPrompt: _systemPrompt,
+      final messages = <ChatCompletionMessage>[
+        ChatCompletionMessage.system(content: _systemPrompt),
+      ];
+
+      final recent =
+          history.length > 6 ? history.sublist(history.length - 6) : history;
+      for (final msg in recent) {
+        if (msg.role == 'user') {
+          messages.add(
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string(msg.content),
+            ),
+          );
+        } else {
+          messages.add(ChatCompletionMessage.assistant(content: msg.content));
+        }
+      }
+
+      messages.add(
+        ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string(userMessage),
+        ),
       );
 
       final response = await _client!.createChatCompletion(
         request: CreateChatCompletionRequest(
-          model: ChatCompletionModel.modelId('gpt-4o-mini'),
-          messages: [
-            const ChatCompletionMessage.system(
-              content: 'Sos ARI, un asistente de productividad. '
-                  'Respondé en español rioplatense, máximo 3 oraciones, '
-                  'de forma directa y útil.',
-            ),
-            ...history.map((h) {
-              final role = h['role']!;
-              final content = h['content']!;
-              if (role == 'assistant') {
-                return ChatCompletionMessage.assistant(content: content);
-              }
-              return ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string(content),
-              );
-            }),
-          ],
-          temperature: 0.7,
-          maxTokens: 1000,
+          model: ChatCompletionModel.modelId(config.model),
+          messages: messages,
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
         ),
       );
 
-      final content = response.choices.first.message.content;
-      return content ?? 'No entendí, ¿podés repetir?';
+      final text = response.choices.first.message.content ?? '';
+      return AIResponse(
+        text: text.replaceAll(RegExp(r'\[PROYECTO:.*?\]'), '').trim(),
+        tokensUsed: response.usage?.totalTokens,
+      );
     } catch (e) {
-      return 'Error: $e';
+      return AIResponse.error(e.toString());
     }
   }
 
-  Future<String> sendMessage(String message) => generateResponse(message);
+  bool get isAvailable => _client != null;
 
-  void clearHistory() {}
-
-  void dispose() {
-    _client?.close();
-  }
+  void dispose() => _client?.close();
 }

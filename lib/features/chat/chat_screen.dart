@@ -13,25 +13,12 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _textCtrl = TextEditingController();
 
   @override
   void dispose() {
-    _controller.dispose();
+    _textCtrl.dispose();
     super.dispose();
-  }
-
-  void _scrollToBottom() {
-    if (!_scrollController.hasClients) return;
-
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (!_scrollController.hasClients) return;
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    });
   }
 
   void _sendMessage() {
@@ -51,193 +38,185 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(chatControllerProvider);
-    final config = ref.watch(chatConfigProvider);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    final hasAI = ref.watch(hasAIProvider);
+    final ctrl = ref.read(chatControllerProvider.notifier);
 
     return Scaffold(
-      appBar: _buildAppBar(state, state.config, controller),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Text('ARI'),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: state.isProMode
+                    ? Colors.amber.withOpacity(0.2)
+                    : Colors.grey.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: state.isProMode ? Colors.amber : Colors.grey,
+                ),
+              ),
+              child: Text(
+                state.isProMode ? 'PRO' : 'BÁSICO',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: state.isProMode ? Colors.amber : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          if (hasAI)
+            IconButton(
+              icon: Icon(
+                state.isProMode ? Icons.bolt : Icons.bolt_outlined,
+                color: state.isProMode ? Colors.amber : null,
+              ),
+              onPressed: ctrl.togglePro,
+            ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('¿Limpiar chat?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      ctrl.clear();
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Limpiar'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder_open),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProjectsScreen()),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
-          if (!config.hasKey) _buildApiKeyWarning(),
-          if (state.error != null) _buildErrorBanner(state.error!),
-          Expanded(child: _buildMessageList(state)),
-          if (state.isLoading) const LinearProgressIndicator(),
-          _buildInputField(),
-        ],
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(
-    ChatState state,
-    ChatConfig config,
-    ChatController controller,
-  ) {
-    return AppBar(
-      title: Row(
-        children: [
-          const Text('ARI'),
-          const SizedBox(width: 8),
-          _buildModeBadge(state),
-        ],
-      ),
-      actions: [
-        if (config.hasKey)
-          IconButton(
-            icon: Icon(
-              state.isProMode ? Icons.bolt : Icons.bolt_outlined,
-              color: state.isProMode ? Colors.amber : null,
-            ),
-            tooltip:
-                state.isProMode ? 'Cambiar a modo básico' : 'Activar modo Pro',
-            onPressed: () =>
-                ref.read(chatControllerProvider.notifier).toggleMode(),
-          ),
-        IconButton(
-          icon: const Icon(Icons.folder),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProjectsScreen()),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.person),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProfileScreen()),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: state.messages.isEmpty ? null : controller.clearChat,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModeBadge(ChatState state) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: state.isProMode
-            ? Colors.amber.withOpacity(0.2)
-            : Colors.grey.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: state.isProMode ? Colors.amber : Colors.grey,
-        ),
-      ),
-      child: Text(
-        state.isProMode ? 'PRO' : 'BÁSICO',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: state.isProMode ? Colors.amber : Colors.grey,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildApiKeyWarning() {
-    return Container(
-      width: double.infinity,
-      color: Colors.orange.withOpacity(0.2),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Modo IA no disponible. Configurá OPENAI_API_KEY para activar Pro.',
-              style: TextStyle(color: Colors.orange.shade300, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorBanner(String error) {
-    return Container(
-      margin: const EdgeInsets.all(8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              error,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 20, color: Colors.red),
-            onPressed: _clearError,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageList(ChatState state) {
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: state.messages.length,
-      itemBuilder: (context, index) {
-        final message = state.messages[index];
-        return _MessageBubble(message: message);
-      },
-    );
-  }
-
-  Widget _buildMessageBubble(Message message) {
-    final isUser = message.isUser;
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isUser ? Colors.blue.shade700 : Colors.grey.shade800,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          message.text,
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputField() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                hintText: 'Escribí tu mensaje...',
-                filled: true,
-                fillColor: Colors.grey.shade900,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
-                ),
-                onSubmitted: (_) => _sendMessage(),
-                textInputAction: TextInputAction.send,
+          if (!hasAI)
+            Container(
+              width: double.infinity,
+              color: Colors.orange.withOpacity(0.2),
+              padding: const EdgeInsets.all(12),
+              child: const Text(
+                '⚠️ Modo IA no disponible. Configura OPENAI_API_KEY',
+                style: TextStyle(color: Colors.orange, fontSize: 12),
               ),
-              onSubmitted: _submit,
+            ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: state.messages.length,
+              itemBuilder: (_, i) {
+                final m = state.messages[i];
+                final isUser = m.role == 'user';
+                return Align(
+                  alignment:
+                      isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isUser ? Colors.blue.shade700 : Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      m.content,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          if (state.isLoading)
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'ARI está pensando...',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'Escribí tu mensaje...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade800,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
+                    ),
+                    onSubmitted: (t) {
+                      if (t.isNotEmpty) {
+                        ctrl.send(t);
+                        _textCtrl.clear();
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  mini: true,
+                  onPressed: state.isLoading
+                      ? null
+                      : () {
+                          if (_textCtrl.text.isNotEmpty) {
+                            ctrl.send(_textCtrl.text);
+                            _textCtrl.clear();
+                          }
+                        },
+                  child: const Icon(Icons.send),
+                ),
+              ],
             ),
             const SizedBox(width: 8),
             FloatingActionButton(
@@ -267,11 +246,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.send, color: Colors.blue),
-            onPressed: () => _submit(_controller.text),
           ),
         ],
       ),

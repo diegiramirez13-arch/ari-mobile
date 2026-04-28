@@ -17,56 +17,42 @@
 - [x] Updated `main.dart` with Firebase init.
 - [x] Created `LoginScreen` with anonymous + email auth.
 - [x] Created `ProjectModel` with Firestore serialization.
-- [x] Added `firebase_options.dart` and actualización manual de credenciales Android/iOS/Web.
+- [x] Added `firebase_options.dart` template.
 - [x] Created Firebase setup guide (`docs/FIREBASE_SETUP.md`).
 
 **TODO Usuario (bloqueante):** correr `flutterfire configure` después de crear el proyecto en Firebase.
 
 ---
 
-## Estado real de avance (actualizado)
+## Plan de ejecución sugerido (Pasos 3, 4 y 5)
 
-### Paso 3: Función de perfil ✅
-- [x] `UserProfileModel` implementado (`lib/core/models/user_profile_model.dart`).
-- [x] Persistencia de perfil en Firestore + cache local (SharedPreferences).
-- [x] `profile_provider.dart` con estados de carga/error.
-- [x] Pantalla de alta/edición de perfil (`lib/features/profile/profile_screen.dart`).
-- [x] Sincronización del perfil al iniciar sesión (`syncProfileOnLogin`).
+### Paso 3: Función de perfil
+- [ ] Crear `UserProfileModel` (`lib/core/models/user_profile_model.dart`).
+- [ ] Crear `profile_repository.dart` para Firestore + cache local (SharedPreferences).
+- [ ] Crear `profile_provider.dart` con estado `{data, isLoading, error}`.
+- [ ] Crear pantalla de alta/edición de perfil (`lib/features/profile/profile_screen.dart`).
+- [ ] Conectar guardado automático y lectura al iniciar sesión.
 
-### Paso 4: Gestión estatal mejorada 🟡 (parcial)
-- [x] Migración principal de side effects de chat a Riverpod (`ChatController`).
-- [x] Manejo de errores por estado (`error`) en chat y perfil.
-- [x] Estados de carga visibles en chat/perfil.
-- [ ] Añadir tests unitarios de providers/controladores críticos.
+### Paso 4: Gestión estatal mejorada
+- [ ] Migrar side effects de pantallas a Notifiers/AsyncNotifiers de Riverpod.
+- [ ] Unificar estado de error con providers dedicados por feature.
+- [ ] Estandarizar estados de carga (`AsyncValue`, `when`, skeletons/spinners).
+- [ ] Añadir tests unitarios de providers críticos.
 
-### Paso 5: Integración de IA 🟡 (parcial)
-- [x] Servicio IA (`lib/core/services/ai_service.dart`) con `openai_dart`.
-- [x] Modo Pro en chat con fallback básico y toggle en UI.
-- [x] Prompt base de personalidad ARI implementado.
-- [ ] Completar contrato multi-backend real (OpenAI / Mistral).
-- [ ] Persistencia de historial optimizada para IA (resumen/token policy).
+### Paso 5: Integración de IA
+- [ ] Crear servicio `ai_service.dart` usando `dio`.
+- [ ] Definir contrato para múltiples backends (OpenAI / Mistral).
+- [ ] Crear “modo Pro” en chat con feature flag por usuario.
+- [ ] Añadir prompt base de personalidad ARI y reglas de seguridad.
+- [ ] Persistir historial relevante (resumen, no tokens crudos sensibles).
 
 ---
-
-## Cierre de sprint (pendientes finales)
-1. Ejecutar `flutterfire configure` en entorno con Flutter instalado.
-2. Correr pruebas manuales E2E: login, perfil, chat básico, chat Pro.
-3. Agregar tests unitarios mínimos (`ChatController`, `ProfileController`, `AIService`).
-4. Revisión final de reglas Firestore + limpieza de documentación de release.
-
-## Ejecución rápida (recomendada)
-
-Para dejar todo listo en una sola pasada (clean + pub get + flutterfire + run):
-
-```bash
-./scripts/setup_and_run.sh
-```
 
 ## Stack actual
 - Flutter 3.16+
 - Firebase (Auth + Firestore)
 - Provider + Riverpod (State Management)
-- Dio + openai_dart (HTTP / IA)
+- Dio (HTTP client)
 - SharedPreferences (almacenamiento local)
 
 ## Siguiente comando

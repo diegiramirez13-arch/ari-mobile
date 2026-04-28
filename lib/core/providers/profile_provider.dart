@@ -49,22 +49,6 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
     }
   }
 
-
-  Future<void> syncProfileOnLogin() async {
-    final userId = ref.read(currentUserIdProvider);
-    if (userId == null) {
-      return;
-    }
-
-    final currentProfile = state.valueOrNull;
-    if (currentProfile != null && currentProfile.userId == userId) {
-      return;
-    }
-
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _loadProfile(userId));
-  }
-
   Future<void> refreshProfile() async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) {
