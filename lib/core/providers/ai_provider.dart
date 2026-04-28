@@ -1,72 +1,112 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/ai_service.dart';
-import '../models/chat_message.dart';
-import '../models/chat_mode.dart';
-import '../config/environment.dart';
 
-// Estado inmutable unificado
+import '../config/environment.dart';
+import '../models/chat_message.dart';
+import '../services/ai_service.dart';
+
+class ChatConfig {
+  final bool isProMode;
+
+  ChatConfig({required this.isProMode});
+}
+
+final chatConfigProvider = Provider<ChatConfig>((ref) {
+  return ChatConfig(isProMode: AppEnvironment.isProMode);
+});
+
+final aiServiceProvider = Provider<AIService>((ref) {
+  return AIService(apiKey: AppEnvironment.openAIApiKey);
+});
+
+typedef Message = ChatMessage;
+
 class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
-  final ChatMode mode;
+  final bool isProMode;
 
   ChatState({
     required this.messages,
     this.isLoading = false,
-    this.mode = ChatMode.basic,
+    this.isProMode = false,
   });
 
-  factory ChatState.initial() {
-    final initialMode = AppEnvironment.isProMode ? ChatMode.pro : ChatMode.basic;
-    return ChatState(
-      messages: [
-        ChatMessage(
-          text: "¡Hola Diego! Soy ARI. ¿Qué vamos a construir hoy?",
-          isUser: false,
-          timestamp: DateTime.now(),
-          mode: initialMode,
-        )
-      ],
-      mode: initialMode,
-    );
-  }
-
-  // CopyWith válido y consistente
-  ChatState copyWith({List<ChatMessage>? messages, bool? isLoading, ChatMode? mode}) {
+  ChatState copyWith({
+    List<ChatMessage>? messages,
+    bool? isLoading,
+    bool? isProMode,
+  }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      mode: mode ?? this.mode,
+      isProMode: isProMode ?? this.isProMode,
     );
   }
 }
 
-// Inyección de dependencias
-final aiProvider = StateNotifierProvider<ChatController, ChatState>((ref) {
-  final service = AIService(apiKey: AppEnvironment.openAIApiKey);
-  return ChatController(service);
+final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>((ref) {
+  final config = ref.watch(chatConfigProvider);
+  final service = ref.watch(aiServiceProvider);
+  return ChatController(service, config.isProMode);
 });
+
+final aiProvider = chatControllerProvider;
 
 class ChatController extends StateNotifier<ChatState> {
   final AIService _aiService;
 
-  ChatController(this._aiService) : super(ChatState.initial());
+  ChatController(this._aiService, bool isPro)
+      : super(
+          ChatState(
+            messages: [
+              ChatMessage(
+                content: '¡Hola Diego! Soy ARI. ¿Qué vamos a construir hoy?',
+                isUser: false,
+              ),
+            ],
+            isProMode: isPro,
+          ),
+        );
 
-  // Bloque try/catch estructurado sin fugas
-  Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+  Future<void> sendMessage(String input) async {
+    if (input.trim().isEmpty) return;
 
-    final userMsg = ChatMessage(text: text, isUser: true, timestamp: DateTime.now(), mode: state.mode);
-    state = state.copyWith(messages: [...state.messages, userMsg], isLoading: true);
+    final userMsg = ChatMessage(content: input, isUser: true);
+    state = state.copyWith(
+      messages: [...state.messages, userMsg],
+      isLoading: true,
+    );
 
     try {
-      final responseText = await _aiService.generateResponse(text);
-      final aiMsg = ChatMessage(text: responseText, isUser: false, timestamp: DateTime.now(), mode: state.mode);
+      final responseText = await _aiService.generateResponse(input);
+      final aiMsg = ChatMessage(content: responseText, isUser: false);
 
-      state = state.copyWith(messages: [...state.messages, aiMsg], isLoading: false);
-    } catch (e) {
-      final errorMsg = ChatMessage(text: "Error procesando solicitud en el orquestador.", isUser: false, timestamp: DateTime.now(), mode: state.mode);
-      state = state.copyWith(messages: [...state.messages, errorMsg], isLoading: false);
+      state = state.copyWith(
+        messages: [...state.messages, aiMsg],
+        isLoading: false,
+      );
+    } catch (_) {
+      final errorMsg = ChatMessage(
+        content: 'Error procesando solicitud en la IA Híbrida.',
+        isUser: false,
+        isError: true,
+      );
+      state = state.copyWith(
+        messages: [...state.messages, errorMsg],
+        isLoading: false,
+      );
     }
+  }
+
+  void clearChat() {
+    state = state.copyWith(
+      messages: [
+        ChatMessage(
+          content: 'Chat reiniciado. ¿En qué te ayudo, Capitán?',
+          isUser: false,
+        ),
+      ],
+      isLoading: false,
+    );
   }
 }
