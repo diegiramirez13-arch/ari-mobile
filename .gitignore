@@ -1,6 +1,4 @@
+# Local secret env files
 .env
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-build/
+.env.*
+!.env.example
