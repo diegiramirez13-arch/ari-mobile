@@ -58,7 +58,9 @@ class AIResponse {
 }
 
 class AIService {
-  late final OpenAIClient _client;
+  OpenAIClient? _client;
+  final List<Map<String, String>> _history = [];
+  static const int _maxHistory = 6;
 
   AIService() {
     if (AppEnvironment.isProMode) {
@@ -73,7 +75,7 @@ class AIService {
     List<Map<String, String>> history = const [],
   }) async {
     if (!isAvailable) {
-      throw Exception('Modo Pro no disponible - falta API Key');
+      return 'El modo Pro no está configurado. Por favor, verificá tu API Key.';
     }
   }
 
@@ -82,17 +84,14 @@ Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos 
 ''';
 
     try {
-      final messages = <ChatCompletionMessage>[
-        ChatCompletionMessage.system(content: _systemPrompt),
-      ];
-
-      final recent =
-          history.length > 6 ? history.sublist(history.length - 6) : history;
-      for (final msg in recent) {
-        if (msg.role == 'user') {
-          messages.add(
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string(msg.content),
+      final response = await _client!.createChatCompletion(
+        request: CreateChatCompletionRequest(
+          model: ChatCompletionModel.modelId('gpt-4o-mini'),
+          messages: [
+            const ChatCompletionMessage.system(
+              content: 'Sos ARI, un asistente de productividad. '
+                  'Respondé en español rioplatense, máximo 3 oraciones, '
+                  'de forma directa y útil.',
             ),
             ...history.map((h) {
               final role = h['role']!;
@@ -121,5 +120,7 @@ Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos 
 
   void clearHistory() {}
 
-  void dispose() {}
+  void dispose() {
+    _client?.close();
+  }
 }

@@ -19,9 +19,14 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  final bootstrapContainer = ProviderContainer();
+  bootstrapContainer.read(chatConfigProvider);
+  bootstrapContainer.read(aiServiceProvider);
+
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    UncontrolledProviderScope(
+      container: bootstrapContainer,
+      child: const AriApp(),
     ),
   );
 }
