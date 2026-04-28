@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   build:
@@ -22,11 +22,19 @@ jobs:
       - name: Resolve OPENAI key by environment
         shell: bash
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          REF_NAME: ${{ github.ref_name }}
           OPENAI_API_KEY_PROD: ${{ secrets.OPENAI_API_KEY_PROD }}
           OPENAI_API_KEY_QA: ${{ secrets.OPENAI_API_KEY_QA }}
           OPENAI_API_KEY_LEGACY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+          TARGET_BRANCH="${REF_NAME}"
+          if [[ "${EVENT_NAME}" == "pull_request" && -n "${BASE_REF}" ]]; then
+            TARGET_BRANCH="${BASE_REF}"
+          fi
+
+          if [[ "${TARGET_BRANCH}" == "main" ]]; then
             SELECTED_KEY="${OPENAI_API_KEY_PROD:-}"
             APP_ENV_VALUE="prod"
           else
@@ -36,6 +44,11 @@ jobs:
 
           if [[ -z "${SELECTED_KEY}" ]]; then
             SELECTED_KEY="${OPENAI_API_KEY_LEGACY:-}"
+          fi
+
+          if [[ -z "${SELECTED_KEY}" ]]; then
+            echo "OPENAI_API_KEY not found in secrets; using ci-dummy-key for static checks."
+            SELECTED_KEY="ci-dummy-key"
           fi
 
           echo "OPENAI_API_KEY=${SELECTED_KEY}" >> "$GITHUB_ENV"
@@ -64,5 +77,29 @@ jobs:
         run: flutter test test/integration --dart-define=ENV=${APP_ENV}
 
       - name: Build APK (smoke test)
+        id: build_apk
         if: steps.platforms.outputs.has_android == 'true'
         run: flutter build apk --debug --dart-define=ENV=${APP_ENV} --dart-define=OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      - name: Upload APK artifact for content review
+        if: steps.platforms.outputs.has_android == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ari-debug-apk-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+
+      - name: Publish review access link in job summary
+        if: steps.platforms.outputs.has_android == 'true'
+        shell: bash
+        env:
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          {
+            echo "### APK disponible para revisión de contenido";
+            echo "";
+            echo "- Artifact: \`ari-debug-apk-${GITHUB_RUN_NUMBER}\`";
+            echo "- Descarga: ${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}";
+          } >> "$GITHUB_STEP_SUMMARY"
