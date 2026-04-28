@@ -34,14 +34,8 @@ class AriApp extends StatelessWidget {
     return MaterialApp(
       title: 'ARI',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(
+      theme: ThemeData.dark().copyWith(
         useMaterial3: true,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.blue.shade700,
-          secondary: Colors.cyan.shade400,
-          surface: Colors.grey.shade900,
-          error: Colors.red.shade400,
-        ),
       ),
       home: const AuthWrapper(),
     );

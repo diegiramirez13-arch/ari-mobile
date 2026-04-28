@@ -9,6 +9,8 @@ class FirestoreService {
   static const String usersCollection = 'users';
   static const String projectsCollection = 'projects';
   static const String chatsCollection = 'chats';
+  static const String profileCollection = 'profile';
+  static const String profileDocId = 'data';
 
   // ============ PROJECTS ============
   Future<void> saveProject(String userId, ProjectModel project) async {

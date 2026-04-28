@@ -271,6 +271,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onSubmitted: (_) => _sendMessage(),
                 textInputAction: TextInputAction.send,
               ),
+              onSubmitted: _submit,
             ),
             const SizedBox(width: 8),
             FloatingActionButton(

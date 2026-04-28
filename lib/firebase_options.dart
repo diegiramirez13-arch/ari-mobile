@@ -1,6 +1,8 @@
 // Generated-like Firebase options.
 // TODO: Run `flutterfire configure` to generate platform-specific Android/iOS/macOS values.
 
+import 'dart:io' show Platform;
+
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
