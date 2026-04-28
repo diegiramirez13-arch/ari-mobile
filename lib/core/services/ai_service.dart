@@ -1,5 +1,5 @@
-import 'package:openai_dart/openai_dart.dart';
 import 'package:flutter/foundation.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 enum AIProvider { openAI, mistral }
 
@@ -58,99 +58,73 @@ class AIResponse {
 }
 
 class AIService {
-  final AIServiceConfig config;
-  OpenAIClient? _client;
+  static const String _systemPrompt =
+      'Sos ARI, Asistente de Inteligencia Aplicada. '
+      'PRINCIPIO: Acción > Charla. '
+      'Si el usuario quiere iniciar un proyecto, incluí al final: '
+      '[ACTION:CREATE_PROJECT:Nombre]. '
+      'Respondé en español rioplatense, breve y al punto.';
 
-  AIService({required this.config}) {
-    _initializeClient();
+  late final OpenAIClient _client;
+
+  AIService() {
+    if (Environment.openAiApiKey.isNotEmpty) {
+      _client = OpenAIClient(apiKey: Environment.openAiApiKey);
+    }
   }
 
-  void _initializeClient() {
-    if (config.apiKey.trim().isEmpty) {
-      debugPrint('Error inicializando OpenAI: API key vacía');
-      _client = null;
-      return;
-    }
-
-    try {
-      _client = OpenAIClient(apiKey: config.apiKey);
-    } catch (e) {
-      debugPrint('Error inicializando OpenAI: $e');
-      _client = null;
+  Future<String> generateResponse(List<Map<String, String>> history) async {
+    if (Environment.openAiApiKey.isEmpty) {
+      return 'Error: No se detectó la llave de ARI Pro. Verificá tu configuración.';
     }
   }
 
   String get _systemPrompt => '''
-Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones.
+Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones. Si detectás que el usuario quiere crear un proyecto, terminá tu respuesta con: [PROYECTO:Nombre del proyecto].
 ''';
 
-  @visibleForTesting
-  static List<ChatCompletionMessage> buildMessagesForRequest({
-    required List<AIMessage> history,
-    required String userMessage,
-    required String systemPrompt,
-  }) {
-    final messages = <ChatCompletionMessage>[
-      ChatCompletionMessage.system(content: systemPrompt),
-    ];
-
-    final recent =
-        history.length > 6 ? history.sublist(history.length - 6) : history;
-    for (final msg in recent) {
-      if (msg.role == 'user') {
-        messages.add(ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(msg.content),
-        ));
-      } else {
-        messages.add(ChatCompletionMessage.assistant(content: msg.content));
-      }
-    }
-
-    final shouldAppendUser = recent.isEmpty ||
-        recent.last.role != 'user' ||
-        recent.last.content.trim() != userMessage.trim();
-
-    if (shouldAppendUser) {
-      messages.add(ChatCompletionMessage.user(
-        content: ChatCompletionUserMessageContent.string(userMessage),
-      ));
-    }
-
-    return messages;
-  }
-
-  Future<AIResponse> generateResponse({
-    required String userMessage,
-    required List<AIMessage> history,
-  }) async {
-    if (_client == null) return AIResponse.error('IA no inicializada');
-
     try {
-      final messages = buildMessagesForRequest(
-        history: history,
-        userMessage: userMessage,
-        systemPrompt: _systemPrompt,
-      );
-
-      final response = await _client!.createChatCompletion(
+      final response = await _client.createChatCompletion(
         request: CreateChatCompletionRequest(
-          model: ChatCompletionModel.modelId(config.model),
-          messages: messages,
-          temperature: config.temperature,
-          maxTokens: config.maxTokens,
+          model: ChatCompletionModel.modelId('gpt-4o-mini'),
+          messages: [
+            const ChatCompletionMessage.system(content: _systemPrompt),
+            ...history.map((msg) {
+              final role = msg['role'] ?? 'user';
+              final content = msg['content'] ?? '';
+              if (role == 'assistant') {
+                return ChatCompletionMessage.assistant(content: content);
+              }
+              return ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string(content),
+              );
+            }),
+          ],
+          temperature: 0.7,
+          maxTokens: 1000,
         ),
       );
 
-      final text = response.choices.first.message.content ?? '';
-      return AIResponse(
-        text: text,
-        tokensUsed: response.usage?.totalTokens,
-      );
+      return response.choices.first.message.content ??
+          'ARI no pudo procesar la idea.';
+    } on OpenAIClientException catch (e) {
+      return 'Fallo en la conexión Pro: ${e.message}';
     } catch (e) {
-      return AIResponse.error(e.toString());
+      return 'Error inesperado en el motor: $e';
     }
   }
 
-  bool get isAvailable => _client != null;
-  void dispose() => _client?.close();
+  Future<String> sendMessage(String message) {
+    return generateResponse([
+      {'role': 'user', 'content': message},
+    ]);
+  }
+
+  void clearHistory() {}
+
+  void dispose() {
+    if (Environment.openAiApiKey.isNotEmpty) {
+      _client.close();
+    }
+  }
 }

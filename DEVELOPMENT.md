@@ -27,23 +27,23 @@
 ## Plan de ejecución sugerido (Pasos 3, 4 y 5)
 
 ### Paso 3: Función de perfil
-- [x] Crear `UserProfileModel` (`lib/core/models/user_profile_model.dart`).
-- [x] Crear `profile_repository.dart` para Firestore + cache local (SharedPreferences).
-- [x] Crear `profile_provider.dart` con estado `{data, isLoading, error}`.
-- [x] Crear pantalla de alta/edición de perfil (`lib/features/profile/profile_screen.dart`).
-- [x] Conectar guardado automático y lectura al iniciar sesión.
+- [ ] Crear `UserProfileModel` (`lib/core/models/user_profile_model.dart`).
+- [ ] Crear `profile_repository.dart` para Firestore + cache local (SharedPreferences).
+- [ ] Crear `profile_provider.dart` con estado `{data, isLoading, error}`.
+- [ ] Crear pantalla de alta/edición de perfil (`lib/features/profile/profile_screen.dart`).
+- [ ] Conectar guardado automático y lectura al iniciar sesión.
 
 ### Paso 4: Gestión estatal mejorada
-- [x] Migrar side effects de pantallas a Notifiers/AsyncNotifiers de Riverpod.
-- [x] Unificar estado de error con providers dedicados por feature.
-- [x] Estandarizar estados de carga (`AsyncValue`, `when`, skeletons/spinners).
-- [x] Añadir tests unitarios de providers críticos.
+- [ ] Migrar side effects de pantallas a Notifiers/AsyncNotifiers de Riverpod.
+- [ ] Unificar estado de error con providers dedicados por feature.
+- [ ] Estandarizar estados de carga (`AsyncValue`, `when`, skeletons/spinners).
+- [ ] Añadir tests unitarios de providers críticos.
 
 ### Paso 5: Integración de IA
-- [ ] Crear servicio `ai_service.dart` usando `dio`.
+- [x] Crear servicio `ai_service.dart` para integración con OpenAI.
 - [ ] Definir contrato para múltiples backends (OpenAI / Mistral).
-- [ ] Crear “modo Pro” en chat con feature flag por usuario.
-- [ ] Añadir prompt base de personalidad ARI y reglas de seguridad.
+- [x] Crear “modo Pro” en chat con feature flag por entorno/API key.
+- [x] Añadir prompt base de personalidad ARI y reglas de seguridad.
 - [ ] Persistir historial relevante (resumen, no tokens crudos sensibles).
 
 ---
