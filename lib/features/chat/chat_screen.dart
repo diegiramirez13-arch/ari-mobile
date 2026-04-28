@@ -13,22 +13,11 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  late final TextEditingController _textController;
-  late final ScrollController _scrollController;
-  final FocusNode _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _textController = TextEditingController();
-    _scrollController = ScrollController();
-  }
+  final TextEditingController _controller = TextEditingController();
 
   @override
   void dispose() {
-    _textController.dispose();
-    _scrollController.dispose();
-    _focusNode.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -64,24 +53,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final state = ref.watch(chatControllerProvider);
     final config = ref.watch(chatConfigProvider);
 
-    // Auto-scroll en nuevos mensajes
-    ref.listen(chatMessagesProvider, (_, __) => _scrollToBottom());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
     return Scaffold(
-      appBar: _buildAppBar(state, config),
+      appBar: _buildAppBar(state, state.config, controller),
       body: Column(
         children: [
           if (!config.hasKey) _buildApiKeyWarning(),
           if (state.error != null) _buildErrorBanner(state.error!),
           Expanded(child: _buildMessageList(state)),
-          if (state.isLoading) _buildLoadingIndicator(),
-          _buildInputArea(state),
+          if (state.isLoading) const LinearProgressIndicator(),
+          _buildInputField(),
         ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(ChatState state, AIConfig config) {
+  PreferredSizeWidget _buildAppBar(
+    ChatState state,
+    ChatConfig config,
+    ChatController controller,
+  ) {
     return AppBar(
       title: Row(
         children: [
@@ -97,25 +89,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               state.isProMode ? Icons.bolt : Icons.bolt_outlined,
               color: state.isProMode ? Colors.amber : null,
             ),
-            tooltip: state.isProMode
-                ? 'Cambiar a modo básico'
-                : 'Activar modo Pro',
-            onPressed: () => ref.read(chatControllerProvider.notifier).toggleMode(),
+            tooltip:
+                state.isProMode ? 'Cambiar a modo básico' : 'Activar modo Pro',
+            onPressed: () =>
+                ref.read(chatControllerProvider.notifier).toggleMode(),
           ),
         IconButton(
+          icon: const Icon(Icons.folder),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProjectsScreen()),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.person),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          ),
+        ),
+        IconButton(
           icon: const Icon(Icons.delete_outline),
-          tooltip: 'Limpiar conversación',
-          onPressed: _showClearDialog,
-        ),
-        IconButton(
-          icon: const Icon(Icons.person_outline),
-          tooltip: 'Perfil',
-          onPressed: () => _navigateTo(const ProfileScreen()),
-        ),
-        IconButton(
-          icon: const Icon(Icons.folder_open),
-          tooltip: 'Proyectos',
-          onPressed: () => _navigateTo(const ProjectsScreen()),
+          onPressed: state.messages.isEmpty ? null : controller.clearChat,
         ),
       ],
     );
@@ -204,74 +199,45 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildLoadingIndicator() {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'ARI está pensando...',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              fontSize: 12,
-            ),
-          ),
-        ],
+  Widget _buildMessageBubble(Message message) {
+    final isUser = message.isUser;
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isUser ? Colors.blue.shade700 : Colors.grey.shade800,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          message.text,
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
 
-  Widget _buildInputArea(ChatState state) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-          ),
-        ),
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _textController,
-                focusNode: _focusNode,
-                enabled: !state.isLoading,
-                decoration: InputDecoration(
-                  hintText: state.isProMode
-                      ? 'Escribí tu mensaje... (IA activa)'
-                      : 'Escribí tu mensaje...',
-                  hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
-                  ),
+  Widget _buildInputField() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: 'Escribí tu mensaje...',
+                filled: true,
+                fillColor: Colors.grey.shade900,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                  borderSide: BorderSide.none,
                 ),
                 onSubmitted: (_) => _sendMessage(),
                 textInputAction: TextInputAction.send,
               ),
+              onSubmitted: _submit,
             ),
             const SizedBox(width: 8),
             FloatingActionButton(
@@ -292,7 +258,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _showClearDialog() {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('¿Limpiar conversación?'),
@@ -302,12 +268,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(chatControllerProvider.notifier).clearChat();
-              Navigator.pop(context);
-            },
-            child: const Text('Limpiar'),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.send, color: Colors.blue),
+            onPressed: () => _submit(_controller.text),
           ),
         ],
       ),
@@ -319,66 +283,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
-  final ChatMessage message;
-
-  const _MessageBubble({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Align(
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        decoration: BoxDecoration(
-          color: message.isError
-              ? Colors.red.withOpacity(0.2)
-              : message.isUser
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(18).copyWith(
-            bottomRight: message.isUser ? const Radius.circular(4) : null,
-            bottomLeft: !message.isUser ? const Radius.circular(4) : null,
-          ),
-          border: message.isError
-              ? Border.all(color: Colors.red.withOpacity(0.5))
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.content,
-              style: TextStyle(
-                color: message.isUser && !message.isError
-                    ? Colors.white
-                    : theme.colorScheme.onSurface,
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _formatTime(message.timestamp),
-              style: TextStyle(
-                color: message.isUser && !message.isError
-                    ? Colors.white.withOpacity(0.7)
-                    : theme.colorScheme.onSurface.withOpacity(0.5),
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    ref.read(chatControllerProvider.notifier).sendMessage(trimmed);
+    _controller.clear();
   }
 }

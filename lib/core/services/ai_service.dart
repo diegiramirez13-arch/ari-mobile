@@ -1,5 +1,5 @@
-import 'package:openai_dart/openai_dart.dart';
 import 'package:flutter/foundation.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 enum AIProvider { openAI, mistral }
 
@@ -58,30 +58,29 @@ class AIResponse {
 }
 
 class AIService {
-  final AIServiceConfig config;
   OpenAIClient? _client;
+  final List<Map<String, String>> _history = [];
+  static const int _maxHistory = 6;
 
-  AIService({required this.config}) {
-    _initializeClient();
+  AIService() {
+    if (AppEnvironment.isProMode) {
+      _client = OpenAIClient(apiKey: AppEnvironment.openAIApiKey);
+    }
   }
 
-  void _initializeClient() {
-    if (config.apiKey.trim().isEmpty) {
-      debugPrint('Error inicializando OpenAI: API key vacía');
-      _client = null;
-      return;
-    }
+  bool get isAvailable => AppEnvironment.isProMode;
 
-    try {
-      _client = OpenAIClient(apiKey: config.apiKey);
-    } catch (e) {
-      debugPrint('Error inicializando OpenAI: $e');
-      _client = null;
+  Future<String> generateResponse(
+    String message, {
+    List<Map<String, String>> history = const [],
+  }) async {
+    if (!isAvailable) {
+      return 'El modo Pro no está configurado. Por favor, verificá tu API Key.';
     }
   }
 
   String get _systemPrompt => '''
-Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones.
+Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones. Si detectás que el usuario quiere crear un proyecto, terminá tu respuesta con: [PROYECTO:Nombre del proyecto].
 ''';
 
   @visibleForTesting
@@ -134,23 +133,41 @@ Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos 
 
       final response = await _client!.createChatCompletion(
         request: CreateChatCompletionRequest(
-          model: ChatCompletionModel.modelId(config.model),
-          messages: messages,
-          temperature: config.temperature,
-          maxTokens: config.maxTokens,
+          model: ChatCompletionModel.modelId('gpt-4o-mini'),
+          messages: [
+            const ChatCompletionMessage.system(
+              content: 'Sos ARI, un asistente de productividad. '
+                  'Respondé en español rioplatense, máximo 3 oraciones, '
+                  'de forma directa y útil.',
+            ),
+            ...history.map((h) {
+              final role = h['role']!;
+              final content = h['content']!;
+              if (role == 'assistant') {
+                return ChatCompletionMessage.assistant(content: content);
+              }
+              return ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string(content),
+              );
+            }),
+          ],
+          temperature: 0.7,
+          maxTokens: 1000,
         ),
       );
 
-      final text = response.choices.first.message.content ?? '';
-      return AIResponse(
-        text: text,
-        tokensUsed: response.usage?.totalTokens,
-      );
+      final content = response.choices.first.message.content;
+      return content ?? 'No entendí, ¿podés repetir?';
     } catch (e) {
-      return AIResponse.error(e.toString());
+      return 'Error: $e';
     }
   }
 
-  bool get isAvailable => _client != null;
-  void dispose() => _client?.close();
+  Future<String> sendMessage(String message) => generateResponse(message);
+
+  void clearHistory() {}
+
+  void dispose() {
+    _client?.close();
+  }
 }

@@ -1,50 +1,30 @@
-enum Environment { dev, qa, prod }
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppEnvironment {
-  static Environment _current = Environment.dev;
-
-  static Environment get current => _current;
-
-  static void setEnvironment(Environment env) {
-    _current = env;
+  static Future<void> setup() async {
+    await dotenv.load(fileName: '.env');
+    validate();
   }
 
-  // API Keys por fuente
-  static String get openAIApiKey {
-    // 1. Intentar desde --dart-define (producción)
-    const fromDefine = String.fromEnvironment('OPENAI_API_KEY');
-    if (fromDefine.isNotEmpty) return fromDefine;
+  static String get openAIApiKey => dotenv.env['OPENAI_API_KEY'] ?? '';
+  static bool get isProMode => openAIApiKey.isNotEmpty;
 
-    // 2. Fallback para desarrollo (NO usar en prod)
-    if (_current == Environment.dev) {
-      // Opcional: leer de archivo local .env.dev
-      // return dotenv.env['OPENAI_API_KEY'] ?? '';
+  static String get currentEnv => dotenv.env['ENV'] ?? 'dev';
+  static bool get isDev => currentEnv == 'dev';
+  static bool get isProd => currentEnv == 'prod';
+
+  static void validate() {
+    if (isProd && openAIApiKey.isEmpty) {
+      throw Exception('OPENAI_API_KEY requerida en producción');
     }
 
-    return '';
+    if (isDev) {
+      debugPrint('🔧 Environment: $currentEnv | Pro mode: $isProMode');
+    }
   }
-
-  static bool get hasOpenAIKey => openAIApiKey.isNotEmpty;
-
-  // Feature flags
-  static bool get enableAI => hasOpenAIKey;
-  static bool get enableAnalytics => _current == Environment.prod;
-  static bool get enableDebugLogs => _current == Environment.dev;
 }
 
-// Helper para inicializar desde main
-void configureEnvironment() {
-  // Detectar por variables de entorno del sistema o compilar-mode
-  const env = String.fromEnvironment('ENV', defaultValue: 'dev');
-
-  switch (env) {
-    case 'prod':
-      AppEnvironment.setEnvironment(Environment.prod);
-      break;
-    case 'qa':
-      AppEnvironment.setEnvironment(Environment.qa);
-      break;
-    default:
-      AppEnvironment.setEnvironment(Environment.dev);
-  }
+Future<void> configureEnvironment() async {
+  await AppEnvironment.setup();
 }
