@@ -8,11 +8,13 @@ import 'core/config/environment.dart';
 import 'core/providers/ai_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
+import 'core/services/admob_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/chat/chat_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AdMobService.initialize();
 
   // Cargar variables de entorno y feature flags antes de inicializar servicios.
   configureEnvironment();
