@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/config/environment.dart';
+import 'core/providers/ai_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
 import 'features/auth/login_screen.dart';
@@ -12,8 +13,7 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  configureEnvironment();
+  await configureEnvironment();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -21,22 +21,22 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: AriApp(),
+      child: MyApp(),
     ),
   );
 }
 
-class AriApp extends StatelessWidget {
-  const AriApp({super.key});
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.read(aiServiceProvider);
+
     return MaterialApp(
       title: 'ARI',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        useMaterial3: true,
-      ),
+      theme: ThemeData.dark(useMaterial3: true),
       home: const AuthWrapper(),
     );
   }

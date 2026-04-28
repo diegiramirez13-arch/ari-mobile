@@ -58,30 +58,28 @@ class AIResponse {
 }
 
 class AIService {
-  final AIServiceConfig config;
-  OpenAIClient? _client;
+  late final OpenAIClient _client;
 
-  AIService({required this.config}) {
-    _initializeClient();
+  AIService() {
+    if (AppEnvironment.isProMode) {
+      _client = OpenAIClient(apiKey: AppEnvironment.openAIApiKey);
+    }
   }
 
-  void _initializeClient() {
-    try {
-      _client = OpenAIClient(apiKey: config.apiKey);
-    } catch (e) {
-      debugPrint('Error inicializando OpenAI: $e');
+  bool get isAvailable => AppEnvironment.isProMode;
+
+  Future<String> generateResponse(
+    String message, {
+    List<Map<String, String>> history = const [],
+  }) async {
+    if (!isAvailable) {
+      throw Exception('Modo Pro no disponible - falta API Key');
     }
   }
 
   String get _systemPrompt => '''
 Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones. Si detectás que el usuario quiere crear un proyecto, terminá tu respuesta con: [PROYECTO:Nombre del proyecto].
 ''';
-
-  Future<AIResponse> generateResponse({
-    required String userMessage,
-    required List<AIMessage> history,
-  }) async {
-    if (_client == null) return AIResponse.error('IA no inicializada');
 
     try {
       final messages = <ChatCompletionMessage>[
@@ -96,38 +94,32 @@ Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos 
             ChatCompletionMessage.user(
               content: ChatCompletionUserMessageContent.string(msg.content),
             ),
-          );
-        } else {
-          messages.add(ChatCompletionMessage.assistant(content: msg.content));
-        }
-      }
-
-      messages.add(
-        ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(userMessage),
+            ...history.map((h) {
+              final role = h['role']!;
+              final content = h['content']!;
+              if (role == 'assistant') {
+                return ChatCompletionMessage.assistant(content: content);
+              }
+              return ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string(content),
+              );
+            }),
+          ],
+          temperature: 0.7,
+          maxTokens: 1000,
         ),
       );
 
-      final response = await _client!.createChatCompletion(
-        request: CreateChatCompletionRequest(
-          model: ChatCompletionModel.modelId(config.model),
-          messages: messages,
-          temperature: config.temperature,
-          maxTokens: config.maxTokens,
-        ),
-      );
-
-      final text = response.choices.first.message.content ?? '';
-      return AIResponse(
-        text: text.replaceAll(RegExp(r'\[PROYECTO:.*?\]'), '').trim(),
-        tokensUsed: response.usage?.totalTokens,
-      );
+      final content = response.choices.first.message.content;
+      return content ?? 'No entendí, ¿podés repetir?';
     } catch (e) {
-      return AIResponse.error(e.toString());
+      return 'Error: $e';
     }
   }
 
-  bool get isAvailable => _client != null;
+  Future<String> sendMessage(String message) => generateResponse(message);
 
-  void dispose() => _client?.close();
+  void clearHistory() {}
+
+  void dispose() {}
 }

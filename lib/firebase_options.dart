@@ -1,7 +1,5 @@
-// Generated-like Firebase options.
-// TODO: Run `flutterfire configure` to generate platform-specific Android/iOS/macOS values.
-
-import 'dart:io' show Platform;
+// Este archivo es generado por FlutterFire CLI.
+// Ejecutar: flutterfire configure
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
@@ -22,8 +20,7 @@ class DefaultFirebaseOptions {
         return macos;
       default:
         throw UnsupportedError(
-          'DefaultFirebaseOptions are not configured for this platform. '
-          'Run flutterfire configure.',
+          'DefaultFirebaseOptions are not supported for this platform.',
         );
     }
   }

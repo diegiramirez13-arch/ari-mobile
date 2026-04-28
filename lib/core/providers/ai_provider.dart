@@ -1,45 +1,31 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/environment.dart';
+import '../models/chat_config.dart';
+import '../models/chat_message.dart';
+import '../repositories/chat_repository.dart';
 import '../services/ai_service.dart';
+import 'auth_provider.dart';
+import 'firestore_provider.dart';
+import 'profile_provider.dart';
 
-class ChatConfig {
-  final bool hasKey;
+typedef Message = ChatMessage;
 
-  const ChatConfig({required this.hasKey});
-}
+// Provider del servicio
+final aiServiceProvider = Provider<AIService>((ref) => AIService());
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  return ChatRepository(
+    ref.watch(aiServiceProvider),
+    ref.watch(firestoreServiceProvider),
+  );
+});
 
 final chatConfigProvider = Provider<ChatConfig>((ref) {
   return ChatConfig(hasKey: AppEnvironment.hasOpenAiKey);
 });
 
-final aiServiceProvider = Provider<AIService?>((ref) {
-  final apiKey = AppEnvironment.openAiApiKey;
-  if (apiKey.trim().isEmpty) {
-    debugPrint('⚠️ OPENAI_API_KEY no configurada');
-    return null;
-  }
-
-  final service = AIService(config: AIServiceConfig(apiKey: apiKey));
-  ref.onDispose(service.dispose);
-  return service;
-});
-
-class ChatMessage {
-  final String content;
-  final bool isUser;
-  final bool isError;
-  final DateTime timestamp;
-
-  const ChatMessage({
-    required this.content,
-    required this.isUser,
-    this.isError = false,
-    required this.timestamp,
-  });
-}
-
+// Estado del chat
 class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
@@ -52,6 +38,13 @@ class ChatState {
     this.isProMode = false,
     this.error,
   });
+
+  factory ChatState.initial(ChatConfig config) => ChatState(
+        messages: const [],
+        isLoading: true,
+        error: null,
+        config: config,
+      );
 
   ChatState copyWith({
     List<ChatMessage>? messages,
@@ -70,24 +63,38 @@ class ChatState {
 }
 
 class ChatController extends StateNotifier<ChatState> {
-  final Ref ref;
+  final ChatRepository _repository;
+  final String _userId;
+  StreamSubscription<List<ChatMessage>>? _historySubscription;
 
-  ChatController(this.ref) : super(const ChatState()) {
-    _initializeChat();
+  ChatController(
+    this._repository,
+    this._userId,
+    ChatConfig config,
+  ) : super(ChatState.initial(config)) {
+    _init();
   }
 
-  AIService? get _aiService => ref.read(aiServiceProvider);
+  void _init() {
+    if (_userId.isEmpty) {
+      state = state.copyWith(isLoading: false);
+      return;
+    }
 
-  void _initializeChat() {
-    state = state.copyWith(
-      messages: [
-        ChatMessage(
-          content: '¡Hola! Soy ARI. ¿Qué querés organizar hoy?',
-          isUser: false,
-          timestamp: DateTime.now(),
-        ),
-      ],
-      clearError: true,
+    _historySubscription?.cancel();
+    _historySubscription = _repository.getMessages(_userId).listen(
+      (messages) {
+        state = state.copyWith(
+          messages: messages.reversed.toList(),
+          isLoading: false,
+        );
+      },
+      onError: (_) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'No se pudo sincronizar el historial.',
+        );
+      },
     );
   }
 
@@ -97,8 +104,10 @@ class ChatController extends StateNotifier<ChatState> {
       return;
     }
 
+    // Agregar mensaje del usuario
     final userMessage = ChatMessage(
-      content: cleanedText,
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      text: text,
       isUser: true,
       timestamp: DateTime.now(),
     );
@@ -110,27 +119,41 @@ class ChatController extends StateNotifier<ChatState> {
       clearError: true,
     );
 
-    try {
-      if (!state.isProMode || _aiService == null) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        final fallbackReply = _basicReply(updatedMessages.length);
-        _appendAssistantMessage(fallbackReply);
-        return;
+    if (_userId.isNotEmpty) {
+      await _repository.saveMessage(_userId, userMessage);
+    }
+
+    // Modo Básico (sin IA)
+    if (!state.config.isProMode) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      final botMessage = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        text: 'Modo básico activo. Configurá OPENAI_API_KEY para usar IA.',
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+      if (_userId.isNotEmpty) {
+        await _repository.saveMessage(_userId, botMessage);
       }
+      state = state.copyWith(
+        messages: [...state.messages, botMessage],
+        isLoading: false,
+      );
+      return;
+    }
 
-      final history = updatedMessages
-          .map(
-            (m) => AIMessage(
-              role: m.isUser ? 'user' : 'assistant',
-              content: m.content,
-              timestamp: m.timestamp,
-            ),
-          )
-          .toList();
-
-      final response = await _aiService!.generateResponse(
-        userMessage: cleanedText,
-        history: history,
+    // Modo Pro (con OpenAI)
+    try {
+      final botMessage = await _repository.getAIResponse(
+        text,
+        state.messages,
+      );
+      if (_userId.isNotEmpty) {
+        await _repository.saveMessage(_userId, botMessage);
+      }
+      state = state.copyWith(
+        messages: [...state.messages, botMessage],
+        isLoading: false,
       );
 
       if (response.isError) {
@@ -152,14 +175,8 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  String _basicReply(int seed) {
-    final responses = [
-      '¡Interesante! ¿Cómo te gustaría empezar?',
-      'Dale, dividamos eso en pasos. ¿Cuál es el primero?',
-      'Perfecto. ¿Querés que te cree un proyecto para organizarlo?',
-      'Entendido. ¿Tenés fecha límite para esto?',
-    ];
-    return responses[seed % responses.length];
+  void clearChat() {
+    state = state.copyWith(messages: []);
   }
 
   void _appendAssistantMessage(
@@ -204,9 +221,27 @@ class ChatController extends StateNotifier<ChatState> {
   void clearError() {
     state = state.copyWith(clearError: true);
   }
+
+  @override
+  void dispose() {
+    _historySubscription?.cancel();
+    super.dispose();
+  }
 }
 
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
-  return ChatController(ref);
+  final repository = ref.watch(chatRepositoryProvider);
+  final config = ref.watch(chatConfigProvider);
+  final userId = ref.watch(currentUserIdProvider) ?? '';
+
+  return ChatController(repository, userId, config);
 });
+
+final chatMessagesProvider = Provider<List<ChatMessage>>(
+  (ref) => ref.watch(chatControllerProvider).messages,
+);
+
+final chatIsLoadingProvider = Provider<bool>(
+  (ref) => ref.watch(chatControllerProvider).isLoading,
+);

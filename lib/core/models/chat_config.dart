@@ -16,7 +16,7 @@ class ChatConfig {
   });
 
   factory ChatConfig.fromEnvironment({String? apiKey, bool? isProUser}) {
-    final resolvedKey = apiKey ?? Environment.openAiApiKey;
+    final resolvedKey = apiKey ?? AppEnvironment.openAIApiKey;
     final proByKey = resolvedKey.isNotEmpty;
     final proByUser = isProUser ?? false;
     return ChatConfig(

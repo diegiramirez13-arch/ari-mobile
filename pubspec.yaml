@@ -42,6 +42,7 @@ dependencies:
   # Debugging & Analytics (opcional)
   logger: ^2.2.0
   openai_dart: ^0.4.5
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +58,7 @@ flutter:
 
   # Assets (preparado para futuros recursos)
   assets:
+    - .env
     - assets/images/
     - assets/icons/
 
