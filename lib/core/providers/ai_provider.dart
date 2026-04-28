@@ -2,20 +2,12 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/chat_config.dart';
-import '../models/chat_message.dart';
-import '../repositories/chat_repository.dart';
 import '../services/ai_service.dart';
+import '../services/firestore_service.dart';
 import 'auth_provider.dart';
 import 'profile_provider.dart';
 
 final aiServiceProvider = Provider<AIService>((ref) => AIService());
-final chatRepositoryProvider = Provider<ChatRepository>((ref) {
-  return ChatRepository(
-    ref.watch(aiServiceProvider),
-    ref.watch(firestoreServiceProvider),
-  );
-});
 
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   return ChatRepository();
@@ -29,37 +21,25 @@ final chatConfigProvider = Provider<ChatConfig>((ref) {
 typedef Message = ChatMessage;
 
 class ChatState {
-  final List<ChatMessage> messages;
+  final List<AIMessage> messages;
   final bool isLoading;
   final bool isProMode;
-  final String? error;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
     this.isProMode = false,
-    this.error,
   });
 
-  factory ChatState.initial(ChatConfig config) => ChatState(
-        messages: const [],
-        isLoading: true,
-        error: null,
-        config: config,
-      );
-
   ChatState copyWith({
-    List<ChatMessage>? messages,
+    List<AIMessage>? messages,
     bool? isLoading,
     bool? isProMode,
-    String? error,
-    bool clearError = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
       isProMode: isProMode ?? this.isProMode,
-      error: clearError ? null : (error ?? this.error),
     );
   }
 }
@@ -108,7 +88,7 @@ class ChatController extends StateNotifier<ChatState> {
 
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: text,
+      content: trimmed,
       isUser: true,
       timestamp: DateTime.now(),
     );
@@ -117,7 +97,7 @@ class ChatController extends StateNotifier<ChatState> {
     state = state.copyWith(
       messages: updatedMessages,
       isLoading: true,
-      clearError: true,
+      error: null,
     );
 
     await _chatRepository.saveMessage(uid, userMessage);
@@ -148,28 +128,12 @@ class ChatController extends StateNotifier<ChatState> {
 
       await _chatRepository.saveMessage(uid, botMessage);
       state = state.copyWith(
-        messages: [...state.messages, botMessage],
+        messages: [...updatedMessages, assistantMessage],
         isLoading: false,
+        error: isError ? response : null,
       );
-
-      if (response.isError) {
-        _appendAssistantMessage(
-          response.text,
-          isError: true,
-          error: response.errorMessage ?? 'No se pudo obtener respuesta de IA.',
-        );
-        return;
-      }
-
-      _appendAssistantMessage(response.text);
-    } catch (e) {
-      _appendAssistantMessage(
-        'Lo siento, hubo un problema procesando tu mensaje.',
-        isError: true,
-        error: e.toString(),
-      );
+      return;
     }
-  }
 
   Future<void> clearChat() async {
     final uid = _uid;
@@ -186,18 +150,8 @@ class ChatController extends StateNotifier<ChatState> {
     String? error,
   }) {
     state = state.copyWith(
-      messages: [
-        ...state.messages,
-        ChatMessage(
-          content: text,
-          isUser: false,
-          isError: isError,
-          timestamp: DateTime.now(),
-        ),
-      ],
       isLoading: false,
-      error: error,
-      clearError: !isError,
+      error: isError ? response : null,
     );
   }
 
@@ -217,10 +171,4 @@ final chatControllerProvider =
   return ChatController(ref, aiService, repo, config);
 });
 
-final chatMessagesProvider = Provider<List<ChatMessage>>(
-  (ref) => ref.watch(chatControllerProvider).messages,
-);
-
-final chatIsLoadingProvider = Provider<bool>(
-  (ref) => ref.watch(chatControllerProvider).isLoading,
-);
+final hasAIProvider = Provider<bool>((ref) => ref.watch(aiServiceProvider) != null);
