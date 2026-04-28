@@ -71,6 +71,7 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   @override
   void initState() {
     super.initState();
+    ref.read(chatConfigProvider);
 
     _authSubscription =
         ref.listenManual<AsyncValue<User?>>(authStateProvider, (previous, next) {

@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/auth_provider.dart';
+import '../../core/repositories/project_repository.dart';
 import 'project.dart';
-import 'projects_repository.dart';
 
-final projectsRepositoryProvider = Provider<ProjectsRepository>((ref) {
-  return ProjectsRepository();
+final projectsRepositoryProvider = Provider<ProjectRepository>((ref) {
+  return ProjectRepository();
 });
 
 final projectsErrorProvider = StateProvider<String?>((ref) => null);
@@ -15,92 +18,89 @@ final projectsControllerProvider =
 );
 
 class ProjectsController extends AsyncNotifier<List<Project>> {
+  StreamSubscription<List<Project>>? _projectsSub;
+
   @override
   Future<List<Project>> build() async {
-    return _loadProjects();
-  }
-
-  Future<List<Project>> _loadProjects() async {
-    ref.read(projectsErrorProvider.notifier).state = null;
-    final repo = ref.read(projectsRepositoryProvider);
-
-    try {
-      await repo.load();
-
-      if (repo.getAll().isEmpty) {
-        await repo.add(Project(
-          id: '1',
-          title: 'ARI MVP',
-          description: 'Construir la primera versión funcional de ARI.',
-        ));
-        await repo.add(Project(
-          id: '2',
-          title: 'Argentina IA Pro',
-          description: 'Convertir el GPT en servicio monetizable.',
-        ));
-      }
-
-      return repo.getAll();
-    } catch (_) {
-      ref.read(projectsErrorProvider.notifier).state =
-          'No se pudieron cargar los proyectos.';
+    final uid = ref.watch(authProvider).value?.uid;
+    if (uid == null) {
       return const [];
     }
+
+    ref.onDispose(() => _projectsSub?.cancel());
+    _subscribe(uid);
+
+    return const [];
+  }
+
+  void _subscribe(String uid) {
+    _projectsSub?.cancel();
+    final repo = ref.read(projectsRepositoryProvider);
+
+    _projectsSub = repo.watchProjects(uid).listen(
+      (projects) {
+        state = AsyncData(projects);
+      },
+      onError: (_) {
+        ref.read(projectsErrorProvider.notifier).state =
+            'No se pudieron sincronizar los proyectos en tiempo real.';
+      },
+    );
   }
 
   Future<void> refreshProjects() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(_loadProjects);
+    final uid = ref.read(authProvider).value?.uid;
+    if (uid == null) return;
+    _subscribe(uid);
   }
 
   Future<void> addProject({
     required String title,
     required String description,
   }) async {
+    final uid = ref.read(authProvider).value?.uid;
+    if (uid == null) return;
+
     if (title.trim().isEmpty) {
       ref.read(projectsErrorProvider.notifier).state =
           'El título del proyecto es obligatorio.';
       return;
     }
 
-    final previous = state.value ?? const <Project>[];
     final repo = ref.read(projectsRepositoryProvider);
+    final project = Project(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title.trim(),
+      description: description.trim(),
+    );
 
-    state = const AsyncLoading();
-    ref.read(projectsErrorProvider.notifier).state = null;
-
-    state = await AsyncValue.guard(() async {
-      await repo.add(Project(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title.trim(),
-        description: description.trim(),
-      ));
-      return repo.getAll();
-    });
-
-    if (state.hasError) {
-      ref.read(projectsErrorProvider.notifier).state =
-          'No se pudo crear el proyecto.';
-      state = AsyncData(previous);
-    }
+    await repo.addProject(uid, project);
   }
 
   Future<void> toggleProjectCompleted(String projectId) async {
-    final previous = state.value ?? const <Project>[];
-    final repo = ref.read(projectsRepositoryProvider);
+    final uid = ref.read(authProvider).value?.uid;
+    if (uid == null) return;
 
-    state = const AsyncLoading();
-    ref.read(projectsErrorProvider.notifier).state = null;
+    final current = state.value ?? const <Project>[];
+    final index = current.indexWhere((p) => p.id == projectId);
+    if (index == -1) return;
 
-    state = await AsyncValue.guard(() async {
-      await repo.toggleCompleted(projectId);
-      return repo.getAll();
-    });
+    final project = current[index];
+    final updated = Project(
+      id: project.id,
+      title: project.title,
+      description: project.description,
+      completed: !project.completed,
+      createdAt: project.createdAt,
+    );
 
-    if (state.hasError) {
-      ref.read(projectsErrorProvider.notifier).state =
-          'No se pudo actualizar el proyecto.';
-      state = AsyncData(previous);
-    }
+    await ref.read(projectsRepositoryProvider).updateProject(uid, updated);
+  }
+
+  Future<void> deleteProject(String projectId) async {
+    final uid = ref.read(authProvider).value?.uid;
+    if (uid == null) return;
+
+    await ref.read(projectsRepositoryProvider).deleteProject(uid, projectId);
   }
 }

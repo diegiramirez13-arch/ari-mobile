@@ -1,39 +1,47 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/chat_message.dart';
-import '../services/ai_service.dart';
-import '../services/firestore_service.dart';
 
 class ChatRepository {
-  final AIService _aiService;
-  final FirestoreService _firestoreService;
+  ChatRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  ChatRepository(this._aiService, this._firestoreService);
+  final FirebaseFirestore _firestore;
 
-  Stream<List<ChatMessage>> getMessages(String userId) {
-    return _firestoreService.getChatHistory(userId);
+  CollectionReference<Map<String, dynamic>> _messagesRef(String uid) {
+    return _firestore.collection('users').doc(uid).collection('messages');
   }
 
-  Future<void> saveMessage(String userId, ChatMessage message) {
-    return _firestoreService.saveMessage(userId, message);
-  }
+  Future<List<ChatMessage>> loadMessages(String uid) async {
+    final snapshot =
+        await _messagesRef(uid).orderBy('timestamp', descending: false).get();
 
-  Future<ChatMessage> getAIResponse(
-    String text,
-    List<ChatMessage> history,
-  ) async {
-    final aiHistory = history
-        .map((m) => {
-              'role': m.isUser ? 'user' : 'assistant',
-              'content': m.text,
-            })
+    return snapshot.docs
+        .map((doc) => ChatMessage.fromMap(doc.id, doc.data()))
         .toList();
+  }
 
-    final response = await _aiService.generateResponse(text, history: aiHistory);
+  Stream<List<ChatMessage>> watchMessages(String uid) {
+    return _messagesRef(uid)
+        .orderBy('timestamp', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => ChatMessage.fromMap(doc.id, doc.data()))
+          .toList();
+    });
+  }
 
-    return ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: response,
-      isUser: false,
-      timestamp: DateTime.now(),
-    );
+  Future<void> saveMessage(String uid, ChatMessage message) async {
+    await _messagesRef(uid).doc(message.id).set(message.toMap());
+  }
+
+  Future<void> clearMessages(String uid) async {
+    final snapshot = await _messagesRef(uid).get();
+    final batch = _firestore.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 }

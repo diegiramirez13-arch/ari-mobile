@@ -108,6 +108,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: Icon(Icons.bolt, color: Colors.amber),
           ),
         IconButton(
+          tooltip: 'Proyectos',
+          icon: const Icon(Icons.folder_outlined),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProjectsScreen()),
+            );
+          },
+        ),
+        IconButton(
+          tooltip: 'Perfil',
+          icon: const Icon(Icons.person_outline),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            );
+          },
+        ),
+        IconButton(
           icon: const Icon(Icons.delete_outline),
           onPressed: controller.clearChat,
         ),

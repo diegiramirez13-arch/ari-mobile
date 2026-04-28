@@ -63,6 +63,7 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
     required String name,
     String? bio,
     String? occupation,
+    bool? isProUser,
   }) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) {
@@ -77,6 +78,7 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
       bio: bio?.trim().isEmpty == true ? null : bio?.trim(),
       occupation:
           occupation?.trim().isEmpty == true ? null : occupation?.trim(),
+      isProUser: isProUser ?? previous?.isProUser ?? false,
       createdAt: previous?.createdAt ?? now,
       updatedAt: now,
     );

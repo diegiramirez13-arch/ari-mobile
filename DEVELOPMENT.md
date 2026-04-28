@@ -40,10 +40,10 @@
 - [ ] Añadir tests unitarios de providers críticos.
 
 ### Paso 5: Integración de IA
-- [x] Crear servicio `ai_service.dart` para integración con OpenAI.
+- [ ] Crear servicio `ai_service.dart` usando `dio`.
 - [ ] Definir contrato para múltiples backends (OpenAI / Mistral).
-- [x] Crear “modo Pro” en chat con feature flag por entorno/API key.
-- [x] Añadir prompt base de personalidad ARI y reglas de seguridad.
+- [x] Crear “modo Pro” en chat con feature flag por usuario.
+- [ ] Añadir prompt base de personalidad ARI y reglas de seguridad.
 - [ ] Persistir historial relevante (resumen, no tokens crudos sensibles).
 
 ---
