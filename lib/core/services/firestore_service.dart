@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/chat_message.dart';
 import '../models/project_model.dart';
 import '../models/user_profile_model.dart';
 
@@ -52,61 +53,80 @@ class FirestoreService {
   }
 
   // ============ CHAT HISTORY ============
-  Future<void> saveChatMessage(
-    String userId,
-    String message,
-    bool isUser,
-  ) async {
+  Future<void> saveMessage(String userId, ChatMessage message) async {
     try {
       await _db
           .collection(usersCollection)
           .doc(userId)
           .collection(chatsCollection)
-          .add({
-        'message': message,
-        'isUser': isUser,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+          .doc(message.id)
+          .set(message.toMap());
     } catch (e) {
       print('Error guardando mensaje: $e');
       rethrow;
     }
   }
 
-  Stream<List<Map<String, dynamic>>> getChatHistoryStream(String userId) {
+  Stream<List<ChatMessage>> getChatHistory(String userId) {
     return _db
         .collection(usersCollection)
         .doc(userId)
         .collection(chatsCollection)
         .orderBy('timestamp', descending: true)
+        .limit(20)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => ChatMessage.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  Future<void> saveChatMessage(
+    String userId,
+    String message,
+    bool isUser,
+  ) async {
+    final chatMessage = ChatMessage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      text: message,
+      isUser: isUser,
+      timestamp: DateTime.now(),
+    );
+    return saveMessage(userId, chatMessage);
+  }
+
+  Stream<List<Map<String, dynamic>>> getChatHistoryStream(String userId) {
+    return getChatHistory(userId).map((messages) => messages
+        .map((message) => {
+              'id': message.id,
+              'text': message.text,
+              'isUser': message.isUser,
+              'timestamp': message.timestamp.toIso8601String(),
+            })
+        .toList());
   }
 
   // ============ PROFILE ============
   Future<UserProfileModel?> getProfile(String userId) async {
-    final doc = await _db
-        .collection(usersCollection)
-        .doc(userId)
-        .collection(profileCollection)
-        .doc(profileDocId)
-        .get();
+    final doc = await _db.collection(usersCollection).doc(userId).get();
 
     if (!doc.exists || doc.data() == null) {
       return null;
     }
 
-    return UserProfileModel.fromMap(doc.data()!);
+    final data = doc.data()!;
+    if (data['name'] == null) {
+      return null;
+    }
+
+    return UserProfileModel.fromMap(data);
   }
 
   Future<void> saveProfile(String userId, UserProfileModel profile) async {
     try {
-      await _db
-          .collection(usersCollection)
-          .doc(userId)
-          .collection(profileCollection)
-          .doc(profileDocId)
-          .set(profile.toMap());
+      await _db.collection(usersCollection).doc(userId).set(
+            profile.toMap(),
+            SetOptions(merge: true),
+          );
     } catch (e) {
       print('Error guardando perfil: $e');
       rethrow;
