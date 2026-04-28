@@ -1,16 +1,37 @@
-﻿# Environment / secrets
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / Environment
 .env
 .env.*
 *.env
+*.local
 
-# Firebase credentials
+# Firebase credentials (all platform locations)
 google-services.json
+**/google-services.json
 GoogleService-Info.plist
+**/GoogleService-Info.plist
 
-# Keys / certs
+# Keys / certificates
 *.pem
 *.key
 *.p12
 *.jks
+*.keystore
 firebase-adminsdk*.json
-*.local
+
+# Local scripts/config
+*.secret

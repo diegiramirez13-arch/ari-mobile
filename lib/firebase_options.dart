@@ -2,53 +2,59 @@
 // Ejecutar: flutterfire configure
 // Más info: https://firebase.flutter.dev/docs/cli
 
+import 'dart:io' show Platform;
+
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    return web;
+    if (kIsWeb) {
+      return web;
+    }
+
+    if (Platform.isAndroid) {
+      return android;
+    }
+
+    if (Platform.isIOS) {
+      return ios;
+    }
+
+    throw UnsupportedError('Plataforma no soportada para FirebaseOptions.');
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: 'YOUR_ANDROID_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'ari-mobile',
-    databaseURL: 'https://ari-mobile.firebaseio.com',
+    apiKey: 'REEMPLAZAR_CON_TU_API_KEY',
+    appId: 'REEMPLAZAR_CON_TU_APP_ID',
+    messagingSenderId: 'REEMPLAZAR_CON_TU_MESSAGING_SENDER_ID',
+    projectId: 'REEMPLAZAR_CON_TU_PROJECT_ID',
+    databaseURL: 'REEMPLAZAR_CON_TU_DATABASE_URL',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'ari-mobile',
-    databaseURL: 'https://ari-mobile.firebaseio.com',
-    iosBundleId: 'com.ari.mobile',
+    apiKey: 'REEMPLAZAR_CON_TU_API_KEY',
+    appId: 'REEMPLAZAR_CON_TU_APP_ID',
+    messagingSenderId: 'REEMPLAZAR_CON_TU_MESSAGING_SENDER_ID',
+    projectId: 'REEMPLAZAR_CON_TU_PROJECT_ID',
+    databaseURL: 'REEMPLAZAR_CON_TU_DATABASE_URL',
+    iosBundleId: 'REEMPLAZAR_CON_TU_IOS_BUNDLE_ID',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'ari-mobile',
-    authDomain: 'ari-mobile.firebaseapp.com',
-    databaseURL: 'https://ari-mobile.firebaseio.com',
-    storageBucket: 'ari-mobile.appspot.com',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_MACOS_API_KEY',
-    appId: 'YOUR_MACOS_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'ari-mobile',
-    databaseURL: 'https://ari-mobile.firebaseio.com',
-    iosBundleId: 'com.ari.mobile.macos',
+    apiKey: 'REEMPLAZAR_CON_TU_API_KEY',
+    appId: 'REEMPLAZAR_CON_TU_APP_ID',
+    messagingSenderId: 'REEMPLAZAR_CON_TU_MESSAGING_SENDER_ID',
+    projectId: 'REEMPLAZAR_CON_TU_PROJECT_ID',
+    authDomain: 'REEMPLAZAR_CON_TU_AUTH_DOMAIN',
+    databaseURL: 'REEMPLAZAR_CON_TU_DATABASE_URL',
+    storageBucket: 'REEMPLAZAR_CON_TU_STORAGE_BUCKET',
   );
 
   // SETUP INSTRUCTIONS:
   // 1. Go to https://console.firebase.google.com
-  // 2. Create project "ari-mobile"
-  // 3. Add Android, iOS, Web apps
+  // 2. Create your Firebase project
+  // 3. Add Android, iOS, and Web apps
   // 4. Download google-services.json and GoogleService-Info.plist
   // 5. Run: flutterfire configure
   // 6. This file will be auto-updated with your credentials
