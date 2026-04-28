@@ -77,5 +77,29 @@ jobs:
         run: flutter test test/integration --dart-define=ENV=${APP_ENV}
 
       - name: Build APK (smoke test)
+        id: build_apk
         if: steps.platforms.outputs.has_android == 'true'
         run: flutter build apk --debug --dart-define=ENV=${APP_ENV} --dart-define=OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      - name: Upload APK artifact for content review
+        if: steps.platforms.outputs.has_android == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ari-debug-apk-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+
+      - name: Publish review access link in job summary
+        if: steps.platforms.outputs.has_android == 'true'
+        shell: bash
+        env:
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          {
+            echo "### APK disponible para revisión de contenido";
+            echo "";
+            echo "- Artifact: \`ari-debug-apk-${GITHUB_RUN_NUMBER}\`";
+            echo "- Descarga: ${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}";
+          } >> "$GITHUB_STEP_SUMMARY"
