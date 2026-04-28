@@ -1,20 +1,37 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/ai_service.dart';
+import '../services/firestore_service.dart';
+import 'auth_provider.dart';
 
-const _apiKey = String.fromEnvironment('OPENAI_API_KEY');
+final firestoreChatServiceProvider =
+    Provider<FirestoreService>((ref) => FirestoreService());
 
-final aiServiceProvider = Provider<AIService?>((ref) {
-  if (_apiKey.isEmpty) {
-    debugPrint('⚠️ OPENAI_API_KEY no configurada');
-    return null;
-  }
+final aiServiceProvider = Provider<AIService>((ref) => AIService());
 
-  final service = AIService(config: const AIServiceConfig(apiKey: _apiKey));
-  ref.onDispose(service.dispose);
-  return service;
+final chatConfigProvider = Provider<ChatConfig>((ref) {
+  return ChatConfig.fromEnvironment();
 });
+
+class Message {
+  final String id;
+  final String content;
+  final bool isUser;
+  final DateTime timestamp;
+  final bool isError;
+
+  const Message({
+    required this.id,
+    required this.content,
+    required this.isUser,
+    required this.timestamp,
+    this.isError = false,
+  });
+}
+
+typedef ChatMessage = Message;
 
 class ChatState {
   final List<AIMessage> messages;
@@ -41,53 +58,191 @@ class ChatState {
 }
 
 class ChatController extends StateNotifier<ChatState> {
-  final Ref ref;
+  static final RegExp _createProjectTagPattern = RegExp(
+    r'\[ACTION:CREATE_PROJECT:([^\]]+)\]',
+  );
 
-  ChatController(this.ref) : super(const ChatState()) {
-    _init();
+  final AIService _aiService;
+  final FirestoreService _firestoreService;
+  final ChatConfig _config;
+  final String? _userId;
+
+  StreamSubscription<List<Map<String, dynamic>>>? _chatSubscription;
+
+  ChatController(
+    this._aiService,
+    this._firestoreService,
+    this._config,
+    this._userId,
+  ) : super(
+          ChatState(
+            config: _config,
+            messages: [
+              Message(
+                id: 'welcome',
+                content:
+                    '¡Hola! Soy ARI. ¿En qué plan de acción trabajamos hoy?',
+                isUser: false,
+                timestamp: DateTime.now(),
+              ),
+            ],
+          ),
+        ) {
+    _initChat();
   }
 
-  void _init() {
-    state = state.copyWith(messages: [
-      AIMessage(
-        role: 'assistant',
-        content: '¡Hola! Soy ARI. ¿Qué querés organizar hoy?',
-      ),
-    ]);
-  }
+  void _initChat() {
+    if (_userId == null) return;
 
-  AIService? get _ai => ref.read(aiServiceProvider);
+    _chatSubscription =
+        _firestoreService.getChatHistoryStream(_userId).listen((messages) {
+      if (messages.isEmpty) {
+        state = state.copyWith(messages: [_welcomeMessage()]);
+        return;
+      }
 
-  Future<void> send(String text) async {
-    if (text.trim().isEmpty || state.isLoading) return;
-
-    final userMsg = AIMessage(role: 'user', content: text.trim());
-    final updatedMessages = [...state.messages, userMsg];
-    state = state.copyWith(messages: updatedMessages, isLoading: true);
-
-    if (!state.isProMode || _ai == null) {
-      await Future.delayed(const Duration(milliseconds: 600));
-      final responses = [
-        '¡Interesante! ¿Cómo te gustaría empezar?',
-        'Dale, dividamos eso en pasos. ¿Cuál es el primero?',
-        'Perfecto. ¿Querés que te cree un proyecto para organizarlo?',
-        'Entendido. ¿Tenés fecha límite para esto?',
-      ];
-      final reply = responses[updatedMessages.length % responses.length];
       state = state.copyWith(
-        messages: [
-          ...updatedMessages,
-          AIMessage(role: 'assistant', content: reply),
-        ],
+        messages: messages.map(_messageFromMap).toList(),
         isLoading: false,
+        error: null,
+      );
+    });
+  }
+
+  Message _welcomeMessage() {
+    return Message(
+      id: 'welcome',
+      content: '¡Hola! Soy ARI. ¿En qué plan de acción trabajamos hoy?',
+      isUser: false,
+      timestamp: DateTime.now(),
+    );
+  }
+
+  Message _messageFromMap(Map<String, dynamic> raw) {
+    final timestamp = raw['timestamp'];
+    final resolvedTimestamp = timestamp is Timestamp
+        ? timestamp.toDate()
+        : DateTime.now();
+    final content = (raw['message'] ?? raw['text'] ?? '').toString();
+
+    return Message(
+      id: raw['id']?.toString() ??
+          '${resolvedTimestamp.microsecondsSinceEpoch}-${raw['isUser']}',
+      content: content,
+      isUser: raw['isUser'] == true,
+      timestamp: resolvedTimestamp,
+      isError: raw['isError'] == true,
+    );
+  }
+
+  Future<String> _executeDetectedActions(String response) async {
+    final match = _createProjectTagPattern.firstMatch(response);
+    if (match == null) {
+      return response;
+    }
+
+    final projectName = match.group(1)?.trim() ?? '';
+    if (projectName.isEmpty || _userId == null) {
+      return response.replaceFirst(_createProjectTagPattern, '').trim();
+    }
+
+    await _firestoreService.createProject(projectName, userId: _userId);
+    final replacement = '🚀 Proyecto "$projectName" creado en tu lista.';
+    return response.replaceFirst(_createProjectTagPattern, replacement).trim();
+  }
+
+  Future<void> sendMessage(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+
+    final userMessage = Message(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      content: trimmed,
+      isUser: true,
+      timestamp: DateTime.now(),
+    );
+
+    final updatedMessages = [...state.messages, userMessage];
+    state = state.copyWith(
+      messages: updatedMessages,
+      isLoading: true,
+      error: null,
+    );
+
+    if (_userId != null) {
+      await _firestoreService.saveMessage(trimmed, true, userId: _userId);
+    }
+
+    String response;
+    var isError = false;
+
+    if (_config.isProMode) {
+      final history = updatedMessages
+          .map(
+            (message) => {
+              'role': message.isUser ? 'user' : 'assistant',
+              'content': message.content,
+            },
+          )
+          .toList();
+
+      response = await _aiService.generateResponse(history);
+      response = await _executeDetectedActions(response);
+      isError = response.startsWith('Error') || response.startsWith('Fallo');
+    } else {
+      response = 'Modo básico: Recibido. ¿Querés que lo agende como proyecto?';
+    }
+
+    final assistantMessage = Message(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      content: response,
+      isUser: false,
+      timestamp: DateTime.now(),
+      isError: isError,
+    );
+
+    if (_userId != null) {
+      await _firestoreService.saveMessage(
+        response,
+        false,
+        userId: _userId,
+        isError: isError,
+      );
+    }
+
+    if (_userId == null) {
+      state = state.copyWith(
+        messages: [...updatedMessages, assistantMessage],
+        isLoading: false,
+        error: isError ? response : null,
       );
       return;
     }
 
-    final response = await _ai!.generateResponse(
-      userMessage: text.trim(),
-      history: updatedMessages,
+    state = state.copyWith(
+      isLoading: false,
+      error: isError ? response : null,
     );
+  }
+
+  Future<void> clearChat() async {
+    _aiService.clearHistory();
+
+    if (_userId != null) {
+      await _firestoreService.clearChatHistory(_userId);
+      return;
+    }
+
+    state = state.copyWith(
+      messages: [_welcomeMessage()],
+      isLoading: false,
+      error: null,
+    );
+  }
+
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
 
     state = state.copyWith(
       messages: [
@@ -98,14 +253,21 @@ class ChatController extends StateNotifier<ChatState> {
     );
   }
 
-  void togglePro() => state = state.copyWith(isProMode: !state.isProMode);
-
-  void clear() => _init();
+  @override
+  void dispose() {
+    _chatSubscription?.cancel();
+    super.dispose();
+  }
 }
 
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
-  return ChatController(ref);
+  final aiService = ref.watch(aiServiceProvider);
+  final firestoreService = ref.watch(firestoreChatServiceProvider);
+  final config = ref.watch(chatConfigProvider);
+  final userId = ref.watch(currentUserIdProvider);
+
+  return ChatController(aiService, firestoreService, config, userId);
 });
 
 final hasAIProvider = Provider<bool>((ref) => ref.watch(aiServiceProvider) != null);

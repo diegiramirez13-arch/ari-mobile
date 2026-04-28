@@ -3,17 +3,19 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'firebase_options.dart';
 import 'core/config/environment.dart';
 import 'core/providers/ai_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
 import 'features/auth/login_screen.dart';
 import 'features/chat/chat_screen.dart';
-import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await configureEnvironment();
+
+  // Cargar variables de entorno y feature flags antes de inicializar servicios.
+  configureEnvironment();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -24,14 +26,13 @@ void main() async {
   bootstrapContainer.read(aiServiceProvider);
 
   runApp(
-    UncontrolledProviderScope(
-      container: bootstrapContainer,
-      child: const AriApp(),
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
@@ -39,9 +40,18 @@ class MyApp extends ConsumerWidget {
     ref.read(aiServiceProvider);
 
     return MaterialApp(
-      title: 'ARI',
+      title: 'ARI - Asistente de IA',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true),
+      theme: ThemeData.dark(
+        useMaterial3: true,
+      ).copyWith(
+        colorScheme: ColorScheme.dark(
+          primary: Colors.blue.shade700,
+          secondary: Colors.cyan.shade400,
+          surface: Colors.grey.shade900,
+          error: Colors.red.shade400,
+        ),
+      ),
       home: const AuthWrapper(),
     );
   }
