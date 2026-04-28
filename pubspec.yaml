@@ -19,7 +19,7 @@ dependencies:
   # State management & architecture
   provider: ^6.1.0
   riverpod: ^2.4.0
-  flutter_riverpod: ^2.4.0
+  flutter_riverpod: ^2.5.1
   get_it: ^7.6.0
 
   # HTTP & networking
@@ -27,13 +27,14 @@ dependencies:
   openai_dart: ^0.4.5
 
   # Firebase (preparado para paso 2)
-  firebase_core: ^2.24.0
-  firebase_auth: ^4.15.0
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
   cloud_firestore: ^4.14.0
 
   # UI & Design
   flutter_svg: ^2.0.0
   google_fonts: ^6.1.0
+  google_mobile_ads: ^5.0.0
 
   # Utilities
   intl: ^0.19.0
@@ -52,6 +53,10 @@ dev_dependencies:
 
   flutter_lints: ^3.0.0
   build_runner: ^2.4.6
+
+dependency_overrides:
+  firebase_core_web: ^2.19.0
+  firebase_auth_web: ^5.13.0
 
 flutter:
   uses-material-design: true

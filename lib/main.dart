@@ -8,11 +8,13 @@ import 'core/config/environment.dart';
 import 'core/providers/ai_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
+import 'core/services/admob_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/chat/chat_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AdMobService.initialize();
 
   // Cargar variables de entorno y feature flags antes de inicializar servicios.
   configureEnvironment();
@@ -32,7 +34,7 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
@@ -42,14 +44,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'ARI - Asistente de IA',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(
+      theme: ThemeData(
         useMaterial3: true,
-      ).copyWith(
-        colorScheme: ColorScheme.dark(
-          primary: Colors.blue.shade700,
-          secondary: Colors.cyan.shade400,
-          surface: Colors.grey.shade900,
-          error: Colors.red.shade400,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.cyan,
+          brightness: Brightness.dark,
         ),
       ),
       home: const AuthWrapper(),

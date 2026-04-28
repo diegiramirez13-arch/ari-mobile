@@ -21,33 +21,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  void _sendMessage() {
-    final text = _textController.text.trim();
-    if (text.isEmpty) return;
-
-    ref.read(chatControllerProvider.notifier).sendMessage(text);
-    _textController.clear();
-    _focusNode.requestFocus();
-    _scrollToBottom();
-  }
-
-  void _clearError() {
-    ref.read(chatControllerProvider.notifier).clearError();
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(chatControllerProvider);
     final config = ref.watch(chatConfigProvider);
     final controller = ref.read(chatControllerProvider.notifier);
+    final proMode = config.isProMode || state.isProMode;
 
     return Scaffold(
-      appBar: _buildAppBar(context, state, config, controller),
+      appBar: _buildAppBar(context, controller, proMode),
       body: Column(
         children: [
           Expanded(child: _buildMessageList(state)),
           if (state.isLoading) const LinearProgressIndicator(),
-          _buildInputArea(state, controller),
+          _buildInputArea(state.isLoading),
         ],
       ),
     );
@@ -55,12 +42,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
-    ChatState state,
-    ChatConfig config,
     ChatController controller,
+    bool proMode,
   ) {
-    final proMode = config.isProMode || state.isProMode;
-
     return AppBar(
       title: Row(
         children: [
@@ -85,45 +69,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.person_outline),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            );
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.folder_open_outlined),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProjectsScreen()),
-            );
-          },
-        ),
-        if (proMode)
-          const Padding(
-            padding: EdgeInsets.only(right: 4),
-            child: Icon(Icons.bolt, color: Colors.amber),
-          ),
-        IconButton(
           tooltip: 'Proyectos',
           icon: const Icon(Icons.folder_outlined),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProjectsScreen()),
-            );
-          },
+          onPressed: () => _navigateTo(const ProjectsScreen()),
         ),
         IconButton(
           tooltip: 'Perfil',
           icon: const Icon(Icons.person_outline),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            );
-          },
+          onPressed: () => _navigateTo(const ProfileScreen()),
         ),
         IconButton(
           icon: const Icon(Icons.delete_outline),
@@ -134,22 +87,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildMessageList(ChatState state) {
-    if (state.messages.isEmpty) {
-      return const Center(
-        child: Text(
-          '¡Hola! Soy ARI.\n¿En qué puedo ayudarte?',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey),
-        ),
-      );
-    }
-
+    final messages = state.messages.reversed.toList();
     return ListView.builder(
       reverse: true,
       padding: const EdgeInsets.all(16),
-      itemCount: state.messages.length,
+      itemCount: messages.isEmpty ? 1 : messages.length,
       itemBuilder: (context, index) {
-        final message = state.messages.reversed.toList()[index];
+        if (messages.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 48),
+            child: Text(
+              '¡Hola! Soy ARI.\n¿En qué puedo ayudarte?',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+
+        final message = messages[index];
         return _buildMessageBubble(message);
       },
     );
@@ -165,9 +120,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         decoration: BoxDecoration(
           color: isUser ? Colors.blue.shade700 : Colors.grey.shade800,
           borderRadius: BorderRadius.circular(20),
-          border: message.isError
-              ? Border.all(color: Colors.red.shade400)
-              : null,
+          border: message.isError ? Border.all(color: Colors.red.shade400) : null,
         ),
         child: Text(
           message.content,
@@ -177,7 +130,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildInputArea(ChatState state, ChatController controller) {
+  Widget _buildInputArea(bool isLoading) {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Row(
@@ -185,7 +138,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Expanded(
             child: TextField(
               controller: _messageController,
-              enabled: !state.isLoading,
+              enabled: !isLoading,
               decoration: InputDecoration(
                 hintText: 'Escribí tu mensaje...',
                 filled: true,
@@ -200,9 +153,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            onPressed:
-                state.isLoading ? null : () => _submit(_messageController.text),
-            icon: state.isLoading
+            onPressed: isLoading ? null : () => _submit(_messageController.text),
+            icon: isLoading
                 ? const SizedBox(
                     width: 18,
                     height: 18,
@@ -215,12 +167,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _navigateTo(Widget screen) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
-  }
-}
+  void _submit(String rawText) {
+    final trimmed = rawText.trim();
+    if (trimmed.isEmpty) return;
 
     ref.read(chatControllerProvider.notifier).sendMessage(trimmed);
     _messageController.clear();
+  }
+
+  void _navigateTo(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 }

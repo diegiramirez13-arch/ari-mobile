@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
 class ChatMessage {
   final String id;
@@ -7,37 +7,31 @@ class ChatMessage {
   final DateTime timestamp;
   final bool isError;
 
-  const ChatMessage({
-    required this.id,
+  ChatMessage({
+    String? id,
     required this.content,
     required this.isUser,
-    required this.timestamp,
+    DateTime? timestamp,
     this.isError = false,
-  });
+  })  : id = id ?? const Uuid().v4(),
+        timestamp = timestamp ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'content': content,
       'isUser': isUser,
-      'timestamp': Timestamp.fromDate(timestamp),
+      'timestamp': timestamp.toIso8601String(),
       'isError': isError,
     };
   }
 
   factory ChatMessage.fromMap(String id, Map<String, dynamic> map) {
-    final ts = map['timestamp'];
-    DateTime parsed = DateTime.now();
-    if (ts is Timestamp) {
-      parsed = ts.toDate();
-    } else if (ts is String) {
-      parsed = DateTime.tryParse(ts) ?? DateTime.now();
-    }
-
     return ChatMessage(
       id: id,
       content: map['content'] as String? ?? '',
       isUser: map['isUser'] as bool? ?? false,
-      timestamp: parsed,
+      timestamp: DateTime.tryParse(map['timestamp'] as String? ?? ''),
       isError: map['isError'] as bool? ?? false,
     );
   }
