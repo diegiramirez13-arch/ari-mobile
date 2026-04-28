@@ -1,0 +1,19 @@
+{
+  "name": "ARI Flutter",
+  "image": "ghcr.io/cirruslabs/flutter:3.16.0",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "flutter pub get",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code"
+      ]
+    }
+  },
+  "remoteEnv": {
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}"
+  }
+}

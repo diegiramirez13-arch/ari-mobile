@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/models/chat_config.dart';
 import '../../core/providers/ai_provider.dart';
 import '../profile/profile_screen.dart';
 import '../projects/projects_screen.dart';
@@ -20,6 +19,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     super.dispose();
+  }
+
+  void _sendMessage() {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+
+    ref.read(chatControllerProvider.notifier).sendMessage(text);
+    _textController.clear();
+    _focusNode.requestFocus();
+    _scrollToBottom();
+  }
+
+  void _clearError() {
+    ref.read(chatControllerProvider.notifier).clearError();
   }
 
   @override
@@ -184,9 +197,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _submit(String text) {
-    final trimmed = text.trim();
-    if (trimmed.isEmpty) return;
+  void _navigateTo(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+}
 
     ref.read(chatControllerProvider.notifier).sendMessage(trimmed);
     _messageController.clear();

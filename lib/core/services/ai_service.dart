@@ -1,6 +1,61 @@
+import 'package:flutter/foundation.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-import '../config/environment.dart';
+enum AIProvider { openAI, mistral }
+
+class AIServiceConfig {
+  final String apiKey;
+  final AIProvider provider;
+  final String model;
+  final double temperature;
+  final int maxTokens;
+
+  const AIServiceConfig({
+    required this.apiKey,
+    this.provider = AIProvider.openAI,
+    this.model = 'gpt-4o-mini',
+    this.temperature = 0.7,
+    this.maxTokens = 1000,
+  });
+}
+
+class AIMessage {
+  final String role;
+  final String content;
+  final DateTime timestamp;
+
+  AIMessage({
+    required this.role,
+    required this.content,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'role': role,
+        'content': content,
+        'timestamp': timestamp.toIso8601String(),
+      };
+}
+
+class AIResponse {
+  final String text;
+  final bool isError;
+  final String? errorMessage;
+  final int? tokensUsed;
+
+  AIResponse({
+    required this.text,
+    this.isError = false,
+    this.errorMessage,
+    this.tokensUsed,
+  });
+
+  factory AIResponse.error(String message) => AIResponse(
+        text: 'Lo siento, hubo un error. ¿Podés intentar de nuevo?',
+        isError: true,
+        errorMessage: message,
+      );
+}
 
 class AIService {
   static const String _systemPrompt =
@@ -22,6 +77,11 @@ class AIService {
     if (Environment.openAiApiKey.isEmpty) {
       return 'Error: No se detectó la llave de ARI Pro. Verificá tu configuración.';
     }
+  }
+
+  String get _systemPrompt => '''
+Eres ARI, Asistente de Inteligencia Aplicada. Estrategia: dividí todo en pasos chicos y accionables. Respondé en español rioplatense, directo y sin vueltas. Máximo 3 oraciones. Si detectás que el usuario quiere crear un proyecto, terminá tu respuesta con: [PROYECTO:Nombre del proyecto].
+''';
 
     try {
       final response = await _client.createChatCompletion(

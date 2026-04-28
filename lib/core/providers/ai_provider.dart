@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/chat_config.dart';
 import '../services/ai_service.dart';
 import '../services/firestore_service.dart';
 import 'auth_provider.dart';
@@ -35,33 +34,27 @@ class Message {
 typedef ChatMessage = Message;
 
 class ChatState {
-  final List<Message> messages;
+  final List<AIMessage> messages;
   final bool isLoading;
-  final String? error;
-  final ChatConfig config;
+  final bool isProMode;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
-    this.error,
-    required this.config,
+    this.isProMode = false,
   });
 
   ChatState copyWith({
-    List<Message>? messages,
+    List<AIMessage>? messages,
     bool? isLoading,
-    String? error,
-    ChatConfig? config,
+    bool? isProMode,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
-      config: config ?? this.config,
+      isProMode: isProMode ?? this.isProMode,
     );
   }
-
-  bool get isProMode => config.isProMode;
 }
 
 class ChatController extends StateNotifier<ChatState> {
@@ -251,10 +244,12 @@ class ChatController extends StateNotifier<ChatState> {
     state = state.copyWith(error: null);
   }
 
-  void toggleMode() {
     state = state.copyWith(
-      error:
-          'El modo está definido por OPENAI_API_KEY. Configurá esa variable para activar/desactivar Pro.',
+      messages: [
+        ...updatedMessages,
+        AIMessage(role: 'assistant', content: response.text),
+      ],
+      isLoading: false,
     );
   }
 
@@ -275,10 +270,4 @@ final chatControllerProvider =
   return ChatController(aiService, firestoreService, config, userId);
 });
 
-final chatMessagesProvider = Provider<List<Message>>(
-  (ref) => ref.watch(chatControllerProvider).messages,
-);
-
-final chatIsLoadingProvider = Provider<bool>(
-  (ref) => ref.watch(chatControllerProvider).isLoading,
-);
+final hasAIProvider = Provider<bool>((ref) => ref.watch(aiServiceProvider) != null);

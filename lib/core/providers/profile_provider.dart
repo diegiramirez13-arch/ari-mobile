@@ -1,7 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_profile_model.dart';
-import '../repositories/profile_repository.dart';
 import 'auth_provider.dart';
 import 'firestore_provider.dart';
 
@@ -12,14 +14,8 @@ final profileControllerProvider =
   ProfileController.new,
 );
 
-final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
-  final firestoreService = ref.watch(firestoreServiceProvider);
-  return ProfileRepository(firestoreService);
-});
-
 class ProfileController extends AsyncNotifier<UserProfileModel?> {
-
-  bool _isActiveUser(String userId) => ref.read(currentUserIdProvider) == userId;
+  static const _cachePrefix = 'profile_cache_';
 
   @override
   Future<UserProfileModel?> build() async {
@@ -34,19 +30,19 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
   Future<UserProfileModel?> _loadProfile(String userId) async {
     ref.read(profileErrorProvider.notifier).state = null;
 
-    final repository = ref.read(profileRepositoryProvider);
-    final cachedProfile = await repository.getCachedProfile(userId);
+    final cachedProfile = await _getCachedProfile(userId);
 
     try {
-      final remoteProfile = await repository.getRemoteProfile(userId);
+      final firestoreService = ref.read(firestoreServiceProvider);
+      final remoteProfile = await firestoreService.getProfile(userId);
 
       if (remoteProfile != null) {
-        await repository.cacheProfile(userId, remoteProfile);
+        await _cacheProfile(userId, remoteProfile);
         return remoteProfile;
       }
 
       return cachedProfile;
-    } catch (e) {
+    } catch (_) {
       ref.read(profileErrorProvider.notifier).state =
           'No se pudo cargar el perfil desde Firebase.';
       return cachedProfile;
@@ -88,81 +84,41 @@ class ProfileController extends AsyncNotifier<UserProfileModel?> {
     state = const AsyncLoading();
     ref.read(profileErrorProvider.notifier).state = null;
 
-    state = await AsyncValue.guard(() async {
-      final repository = ref.read(profileRepositoryProvider);
-      await repository.cacheProfile(userId, profile);
-      await repository.saveRemoteProfile(userId, profile);
+    await _cacheProfile(userId, profile);
+
+    final result = await AsyncValue.guard(() async {
+      final firestoreService = ref.read(firestoreServiceProvider);
+      await firestoreService.saveProfile(userId, profile);
       return profile;
     });
 
-    if (state.hasError) {
+    if (result.hasError) {
       ref.read(profileErrorProvider.notifier).state =
-          'No se pudo guardar el perfil. Inténtalo nuevamente.';
+          'No se pudo guardar en Firebase. Tus cambios quedaron guardados localmente.';
       state = AsyncData(profile);
+      return;
     }
+
+    state = result;
   }
 
-  Future<void> syncProfileOnLogin() async {
-    final userId = ref.read(currentUserIdProvider);
-    if (userId == null) {
-      return;
-    }
-
-    ref.read(profileErrorProvider.notifier).state = null;
-    final repository = ref.read(profileRepositoryProvider);
-
-    final cachedProfile = await repository.getCachedProfile(userId);
-    if (!_isActiveUser(userId)) {
-      return;
+  Future<UserProfileModel?> _getCachedProfile(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('$_cachePrefix$userId');
+    if (raw == null || raw.isEmpty) {
+      return null;
     }
 
     try {
-      final remoteProfile = await repository.getRemoteProfile(userId);
-      if (!_isActiveUser(userId)) {
-        return;
-      }
-
-      if (remoteProfile != null) {
-        await repository.cacheProfile(userId, remoteProfile);
-        if (!_isActiveUser(userId)) {
-          return;
-        }
-        state = AsyncData(remoteProfile);
-        return;
-      }
-
-      if (cachedProfile != null) {
-        await repository.saveRemoteProfile(userId, cachedProfile);
-        if (!_isActiveUser(userId)) {
-          return;
-        }
-        state = AsyncData(cachedProfile);
-        return;
-      }
-
-      final now = DateTime.now();
-      final newProfile = UserProfileModel.empty(userId).copyWith(
-        name: 'Usuario',
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      await repository.cacheProfile(userId, newProfile);
-      await repository.saveRemoteProfile(userId, newProfile);
-      if (!_isActiveUser(userId)) {
-        return;
-      }
-      state = AsyncData(newProfile);
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return UserProfileModel.fromMap(decoded);
     } catch (_) {
-      if (!_isActiveUser(userId)) {
-        return;
-      }
-      if (cachedProfile != null) {
-        state = AsyncData(cachedProfile);
-      }
-      ref.read(profileErrorProvider.notifier).state =
-          'No se pudo sincronizar el perfil al iniciar sesión.';
+      return null;
     }
   }
 
+  Future<void> _cacheProfile(String userId, UserProfileModel profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$_cachePrefix$userId', jsonEncode(profile.toMap()));
+  }
 }
