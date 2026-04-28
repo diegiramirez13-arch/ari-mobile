@@ -1,18 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'firebase_options.dart';
+
 import 'core/config/environment.dart';
 import 'core/providers/ai_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
-import 'features/chat/chat_screen.dart';
 import 'features/auth/login_screen.dart';
+import 'features/chat/chat_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  configureEnvironment();
+  await configureEnvironment();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -30,29 +31,22 @@ void main() async {
   );
 }
 
-class AriApp extends StatelessWidget {
-  const AriApp({super.key});
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.read(aiServiceProvider);
+
     return MaterialApp(
       title: 'ARI',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(
-        useMaterial3: true,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.blue.shade700,
-          secondary: Colors.cyan.shade400,
-          surface: Colors.grey.shade900,
-          error: Colors.red.shade400,
-        ),
-      ),
+      theme: ThemeData.dark(useMaterial3: true),
       home: const AuthWrapper(),
     );
   }
 }
 
-// Widget que verifica autenticación
 class AuthWrapper extends ConsumerStatefulWidget {
   const AuthWrapper({super.key});
 
@@ -71,6 +65,7 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
     _authSubscription =
         ref.listenManual<AsyncValue<User?>>(authStateProvider, (previous, next) {
       final userId = next.value?.uid;
+
       if (userId != null && userId != _lastSyncedUserId) {
         _lastSyncedUserId = userId;
         ref.read(profileControllerProvider.notifier).syncProfileOnLogin();
@@ -111,7 +106,6 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   }
 }
 
-// Splash screen mientras se carga Firebase
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
