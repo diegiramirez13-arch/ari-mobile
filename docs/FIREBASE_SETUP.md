@@ -91,6 +91,9 @@ service cloud.firestore {
       match /chats/{chatId=**} {
         allow read, write: if request.auth.uid == userId;
       }
+
+      // Perfil (campos en documento users/{userId})
+      // No requiere subcolección adicional.
     }
   }
 }
@@ -124,6 +127,12 @@ flutter run
 firestore/
 ├── users (collection)
 │   └── {userId}
+│       ├── name: string
+│       ├── bio: string?
+│       ├── occupation: string?
+│       ├── createdAt: string (ISO8601)
+│       ├── updatedAt: string (ISO8601)
+│       ├── userId: string
 │       ├── projects (subcollection)
 │       │   └── {projectId}
 │       │       ├── id: string

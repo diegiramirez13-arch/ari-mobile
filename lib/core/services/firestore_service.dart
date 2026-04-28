@@ -107,28 +107,26 @@ class FirestoreService {
 
   // ============ PROFILE ============
   Future<UserProfileModel?> getProfile(String userId) async {
-    final doc = await _db
-        .collection(usersCollection)
-        .doc(userId)
-        .collection(profileCollection)
-        .doc(profileDocId)
-        .get();
+    final doc = await _db.collection(usersCollection).doc(userId).get();
 
     if (!doc.exists || doc.data() == null) {
       return null;
     }
 
-    return UserProfileModel.fromMap(doc.data()!);
+    final data = doc.data()!;
+    if (data['name'] == null) {
+      return null;
+    }
+
+    return UserProfileModel.fromMap(data);
   }
 
   Future<void> saveProfile(String userId, UserProfileModel profile) async {
     try {
-      await _db
-          .collection(usersCollection)
-          .doc(userId)
-          .collection(profileCollection)
-          .doc(profileDocId)
-          .set(profile.toMap());
+      await _db.collection(usersCollection).doc(userId).set(
+            profile.toMap(),
+            SetOptions(merge: true),
+          );
     } catch (e) {
       print('Error guardando perfil: $e');
       rethrow;

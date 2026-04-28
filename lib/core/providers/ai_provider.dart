@@ -21,24 +21,22 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   );
 });
 
-// Configuración del chat
 final chatConfigProvider = Provider<ChatConfig>((ref) {
-  final profile = ref.watch(profileControllerProvider).value;
-  return ChatConfig.fromEnvironment(isProUser: profile?.isProUser ?? false);
+  return ChatConfig(hasKey: AppEnvironment.hasOpenAiKey);
 });
 
 // Estado del chat
 class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
+  final bool isProMode;
   final String? error;
-  final ChatConfig config;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
+    this.isProMode = false,
     this.error,
-    required this.config,
   });
 
   factory ChatState.initial(ChatConfig config) => ChatState(
@@ -51,21 +49,19 @@ class ChatState {
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
+    bool? isProMode,
     String? error,
-    ChatConfig? config,
+    bool clearError = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
-      config: config ?? this.config,
+      isProMode: isProMode ?? this.isProMode,
+      error: clearError ? null : (error ?? this.error),
     );
   }
-
-  bool get isProMode => config.isProMode;
 }
 
-// Controller con StateNotifier
 class ChatController extends StateNotifier<ChatState> {
   final ChatRepository _repository;
   final String _userId;
@@ -103,7 +99,10 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+    final cleanedText = text.trim();
+    if (cleanedText.isEmpty || state.isLoading) {
+      return;
+    }
 
     // Agregar mensaje del usuario
     final userMessage = ChatMessage(
@@ -113,10 +112,11 @@ class ChatController extends StateNotifier<ChatState> {
       timestamp: DateTime.now(),
     );
 
+    final updatedMessages = [...state.messages, userMessage];
     state = state.copyWith(
-      messages: [...state.messages, userMessage],
+      messages: updatedMessages,
       isLoading: true,
-      error: null,
+      clearError: true,
     );
 
     if (_userId.isNotEmpty) {
@@ -155,9 +155,21 @@ class ChatController extends StateNotifier<ChatState> {
         messages: [...state.messages, botMessage],
         isLoading: false,
       );
+
+      if (response.isError) {
+        _appendAssistantMessage(
+          response.text,
+          isError: true,
+          error: response.errorMessage ?? 'No se pudo obtener respuesta de IA.',
+        );
+        return;
+      }
+
+      _appendAssistantMessage(response.text);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
+      _appendAssistantMessage(
+        'Lo siento, hubo un problema procesando tu mensaje.',
+        isError: true,
         error: e.toString(),
       );
     }
@@ -167,15 +179,47 @@ class ChatController extends StateNotifier<ChatState> {
     state = state.copyWith(messages: []);
   }
 
-  void clearError() {
-    state = state.copyWith(error: null);
+  void _appendAssistantMessage(
+    String text, {
+    bool isError = false,
+    String? error,
+  }) {
+    state = state.copyWith(
+      messages: [
+        ...state.messages,
+        ChatMessage(
+          content: text,
+          isUser: false,
+          isError: isError,
+          timestamp: DateTime.now(),
+        ),
+      ],
+      isLoading: false,
+      error: error,
+      clearError: !isError,
+    );
   }
 
   void toggleMode() {
-    state = state.copyWith(
-      error:
-          'El modo está definido por OPENAI_API_KEY. Configurá esa variable para activar/desactivar Pro.',
-    );
+    final hasKey = ref.read(chatConfigProvider).hasKey;
+    if (!hasKey) {
+      state = state.copyWith(
+        error: 'No hay OPENAI_API_KEY configurada para activar modo Pro.',
+      );
+      return;
+    }
+
+    state = state.copyWith(isProMode: !state.isProMode, clearError: true);
+  }
+
+  void clearChat() {
+    final wasPro = state.isProMode;
+    state = ChatState(isProMode: wasPro);
+    _initializeChat();
+  }
+
+  void clearError() {
+    state = state.copyWith(clearError: true);
   }
 
   @override
@@ -185,7 +229,6 @@ class ChatController extends StateNotifier<ChatState> {
   }
 }
 
-// Provider del controller
 final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
   final repository = ref.watch(chatRepositoryProvider);
