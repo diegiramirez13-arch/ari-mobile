@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
+import '../models/chat_message.dart';
 import '../models/project_model.dart';
 import '../models/user_profile_model.dart';
 
@@ -34,7 +36,7 @@ class FirestoreService {
           .doc(project.id)
           .set(project.toJson());
     } catch (e) {
-      print('Error guardando proyecto: $e');
+      debugPrint('Error guardando proyecto: $e');
       rethrow;
     }
   }
@@ -58,7 +60,7 @@ class FirestoreService {
           .doc(projectId)
           .delete();
     } catch (e) {
-      print('Error eliminando proyecto: $e');
+      debugPrint('Error eliminando proyecto: $e');
       rethrow;
     }
   }
@@ -95,8 +97,34 @@ class FirestoreService {
         'timestamp': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Error guardando mensaje: $e');
+      debugPrint('Error guardando mensaje: $e');
       rethrow;
+    }
+  }
+
+  Future<List<ChatMessage>> loadChatHistory(String userId) async {
+    try {
+      final snapshot = await _chatCollection(userId)
+          .orderBy('timestamp', descending: false)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        final timestamp = data['timestamp'];
+        final parsedTimestamp = timestamp is Timestamp
+            ? timestamp.toDate()
+            : DateTime.tryParse((timestamp ?? '').toString()) ?? DateTime.now();
+
+        return ChatMessage(
+          id: data['id'] as String? ?? doc.id,
+          content: data['content'] as String? ?? data['message'] as String? ?? '',
+          isUser: data['isUser'] as bool? ?? false,
+          timestamp: parsedTimestamp,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error cargando historial de Firestore: $e');
+      return []; // Si falla, devuelve una lista vacía para no romper la UI.
     }
   }
 
@@ -172,7 +200,7 @@ class FirestoreService {
             SetOptions(merge: true),
           );
     } catch (e) {
-      print('Error guardando perfil: $e');
+      debugPrint('Error guardando perfil: $e');
       rethrow;
     }
   }
