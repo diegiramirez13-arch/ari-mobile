@@ -74,6 +74,54 @@ jobs:
         run: |
           [[ -d android ]] && echo "has_android=true" >> "$GITHUB_OUTPUT" || echo "has_android=false" >> "$GITHUB_OUTPUT"
 
+
+      - name: Validate pubspec duplicate dependency keys
+        shell: bash
+        run: |
+          python - <<'PYCODE'
+          from pathlib import Path
+
+          lines = Path('pubspec.yaml').read_text().splitlines()
+          section = None
+          deps = set()
+          dev_deps = set()
+          duplicates = []
+
+          for idx, raw in enumerate(lines, start=1):
+            line = raw.rstrip('\n')
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#'):
+              continue
+            if not line.startswith(' '):
+              if stripped == 'dependencies:':
+                section = 'dependencies'
+              elif stripped == 'dev_dependencies:':
+                section = 'dev_dependencies'
+              else:
+                section = None
+              continue
+            if section not in {'dependencies', 'dev_dependencies'}:
+              continue
+            if not line.startswith('  ') or line.startswith('    '):
+              continue
+            if ':' not in stripped:
+              continue
+            key = stripped.split(':', 1)[0].strip()
+            if not key or key == 'flutter':
+              continue
+            bucket = deps if section == 'dependencies' else dev_deps
+            if key in bucket:
+              duplicates.append((section, key, idx))
+            bucket.add(key)
+
+          if duplicates:
+            print('Duplicate dependency keys found in pubspec.yaml:')
+            for section, key, idx in duplicates:
+              print(f'- {section}.{key} (line {idx})')
+            raise SystemExit(1)
+
+          print('No duplicate dependency keys found in pubspec.yaml.')
+          PYCODE
       - name: Install dependencies
         run: flutter pub get
 
