@@ -2,3 +2,6 @@
 .env
 .env.*
 !.env.example
+
+# Firebase config (generated in CI)
+android/app/google-services.json
