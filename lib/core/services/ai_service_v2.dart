@@ -1,6 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'ai_backend.dart';
+import '../repositories/chat_repository.dart';
 import 'logger_service.dart';
 import 'local_backend.dart';
 import 'openai_backend.dart';
@@ -10,6 +11,7 @@ class AIServiceV2 {
 
   // Manejo de memoria y contexto (últimos 6 mensajes)
   final List<Map<String, String>> _contextHistory = [];
+  final ChatRepository _chatRepo = ChatRepository();
 
   AIServiceV2() {
     _initializeBackend();
@@ -24,7 +26,7 @@ class AIServiceV2 {
     }
   }
 
-  Future<String> processUserMessage(String prompt) async {
+  Future<String> processUserMessage(String prompt, String userId) async {
     try {
       _contextHistory.add({'role': 'user', 'content': prompt});
 
@@ -40,10 +42,12 @@ class AIServiceV2 {
         _contextHistory.removeAt(0);
       }
 
+      await _chatRepo.saveChatSummary(userId, prompt, response);
+
       return response;
     } catch (e, stack) {
       LoggerService.error('Fallo en IA', e, stackTrace: stack);
-      return 'ARI Error de Ejecución: Ocurrió un problema de conexión ($e). Pasando a modo seguro.';
+      return 'ARI Error de Ejecución: Modo Seguro Activado.';
     }
   }
 

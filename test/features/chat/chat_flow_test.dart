@@ -13,7 +13,10 @@ void main() {
       dotenv.env.clear(); // Forzamos entorno sin key
       final aiService = AIServiceV2();
 
-      final response = await aiService.processUserMessage('Crear tarea de prueba');
+      final response = await aiService.processUserMessage(
+        'Crear tarea de prueba',
+        'test-user',
+      );
 
       // Validación: El sistema debe responder determinísticamente sin romper el flujo
       expect(response, isNotNull);

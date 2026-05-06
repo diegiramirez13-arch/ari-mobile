@@ -13,7 +13,7 @@ void main() {
       dotenv.env.clear(); // Forzamos entorno sin API key
       final service = AIServiceV2();
 
-      final response = await service.processUserMessage('hola');
+      final response = await service.processUserMessage('hola', 'test-user');
 
       expect(response, isNotEmpty);
       expect(response, isNot(contains('Error de Ejecución')));
@@ -24,7 +24,7 @@ void main() {
       service.clearMemory();
 
       for (var i = 0; i < 8; i++) {
-        await service.processUserMessage('Mensaje $i');
+        await service.processUserMessage('Mensaje $i', 'test-user');
       }
 
       // Al ser un test aislado con LocalBackend, simplemente validamos
