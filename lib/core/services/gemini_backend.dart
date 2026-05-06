@@ -16,6 +16,12 @@ class GeminiBackend implements AIBackend {
   bool get isAvailable => true;
 
   @override
+  Future<String> generateResponse(String prompt) async {
+    final response = await sendMessage(prompt, const AIServiceConfig());
+    return response.text;
+  }
+
+  @override
   Future<AIResponse> sendMessage(String prompt, AIServiceConfig config) async {
     if (!config.hasApiKey) {
       return AIResponse.error(

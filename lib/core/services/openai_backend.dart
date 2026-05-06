@@ -1,9 +1,11 @@
 import 'dart:convert';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/ai_response.dart';
 import '../models/ai_service_config.dart';
+import '../models/chat_mode.dart';
 import 'ai_backend.dart';
 
 class OpenAIBackend implements AIBackend {
@@ -14,6 +16,18 @@ class OpenAIBackend implements AIBackend {
 
   @override
   bool get isAvailable => true;
+
+  @override
+  Future<String> generateResponse(String prompt) async {
+    final response = await sendMessage(
+      prompt,
+      AIServiceConfig(
+        apiKey: dotenv.env['OPENAI_API_KEY'],
+        mode: ChatMode.pro,
+      ),
+    );
+    return response.text;
+  }
 
   @override
   Future<AIResponse> sendMessage(String prompt, AIServiceConfig config) async {

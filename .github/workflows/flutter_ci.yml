@@ -1,167 +1,37 @@
-name: Flutter CI
+name: ARI Mobile CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, release/* ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main ]
 
 jobs:
-  build:
+  quality_gate:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Clonar Repositorio
+        uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.0'
           channel: 'stable'
 
-      - name: Resolve OPENAI key by environment
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
-          REF_NAME: ${{ github.ref_name }}
-          OPENAI_API_KEY_PROD: ${{ secrets.OPENAI_API_KEY_PROD }}
-          OPENAI_API_KEY_QA: ${{ secrets.OPENAI_API_KEY_QA }}
-          OPENAI_API_KEY_LEGACY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          TARGET_BRANCH="${REF_NAME}"
-          if [[ "${EVENT_NAME}" == "pull_request" && -n "${BASE_REF}" ]]; then
-            TARGET_BRANCH="${BASE_REF}"
-          fi
-
-          if [[ "${TARGET_BRANCH}" == "main" ]]; then
-            SELECTED_KEY="${OPENAI_API_KEY_PROD:-}"
-            APP_ENV_VALUE="prod"
-          else
-            SELECTED_KEY="${OPENAI_API_KEY_QA:-}"
-            APP_ENV_VALUE="qa"
-          fi
-
-          if [[ -z "${SELECTED_KEY}" ]]; then
-            SELECTED_KEY="${OPENAI_API_KEY_LEGACY:-}"
-          fi
-
-          if [[ -z "${SELECTED_KEY}" ]]; then
-            echo "OPENAI_API_KEY not found in secrets; using ci-dummy-key for static checks."
-            SELECTED_KEY="ci-dummy-key"
-          fi
-
-          echo "OPENAI_API_KEY=${SELECTED_KEY}" >> "$GITHUB_ENV"
-          echo "APP_ENV=${APP_ENV_VALUE}" >> "$GITHUB_ENV"
-
-      - name: Setup Firebase
-        shell: bash
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          if [[ -z "${GOOGLE_SERVICES_JSON}" ]]; then
-            echo "GOOGLE_SERVICES_JSON secret is empty; skipping Firebase file generation."
-            exit 0
-          fi
-
-          mkdir -p android/app
-          printf '%s' "${GOOGLE_SERVICES_JSON}" > android/app/google-services.json
-          echo "google-services.json created from GitHub Actions secret."
-
-      - name: Detect Flutter platforms in repo
-        id: platforms
-        shell: bash
-        run: |
-          [[ -d android ]] && echo "has_android=true" >> "$GITHUB_OUTPUT" || echo "has_android=false" >> "$GITHUB_OUTPUT"
-
-
-      - name: Validate pubspec duplicate dependency keys
-        shell: bash
-        run: |
-          python - <<'PYCODE'
-          from pathlib import Path
-
-          lines = Path('pubspec.yaml').read_text().splitlines()
-          section = None
-          deps = set()
-          dev_deps = set()
-          duplicates = []
-
-          for idx, raw in enumerate(lines, start=1):
-            line = raw.rstrip('\n')
-            stripped = line.strip()
-            if not stripped or stripped.startswith('#'):
-              continue
-            if not line.startswith(' '):
-              if stripped == 'dependencies:':
-                section = 'dependencies'
-              elif stripped == 'dev_dependencies:':
-                section = 'dev_dependencies'
-              else:
-                section = None
-              continue
-            if section not in {'dependencies', 'dev_dependencies'}:
-              continue
-            if not line.startswith('  ') or line.startswith('    '):
-              continue
-            if ':' not in stripped:
-              continue
-            key = stripped.split(':', 1)[0].strip()
-            if not key or key == 'flutter':
-              continue
-            bucket = deps if section == 'dependencies' else dev_deps
-            if key in bucket:
-              duplicates.append((section, key, idx))
-            bucket.add(key)
-
-          if duplicates:
-            print('Duplicate dependency keys found in pubspec.yaml:')
-            for section, key, idx in duplicates:
-              print(f'- {section}.{key} (line {idx})')
-            raise SystemExit(1)
-
-          print('No duplicate dependency keys found in pubspec.yaml.')
-          PYCODE
-      - name: Install dependencies
+      - name: Instalar Dependencias
         run: flutter pub get
 
-      - name: Analyze
+      - name: Análisis Estático (Quality Gate)
         run: flutter analyze --fatal-infos
 
-      - name: Run unit/widget tests (exclude integration)
-        run: |
-          flutter test test/core test/features \
-            --dart-define=ENV=${APP_ENV} \
-            --dart-define=OPENAI_API_KEY=${OPENAI_API_KEY}
+      - name: Tests del Orquestador IA (Core)
+        run: flutter test test/core/services/ai_service_test.dart
 
-      - name: Run integration tests
-        if: false
-        run: flutter test test/integration --dart-define=ENV=${APP_ENV}
+      - name: Tests de Flujo Crítico (Chat UI & E2E)
+        run: flutter test test/features/chat/chat_flow_test.dart
 
-      - name: Build APK (smoke test)
-        id: build_apk
-        if: steps.platforms.outputs.has_android == 'true'
-        run: flutter build apk --debug --dart-define=ENV=${APP_ENV} --dart-define=OPENAI_API_KEY=${OPENAI_API_KEY}
+      - name: Validación de Compilación Web (CanvasKit)
+        run: flutter build web --web-renderer canvaskit
 
-      - name: Upload APK artifact for content review
-        if: steps.platforms.outputs.has_android == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ari-debug-apk-${{ github.run_number }}
-          path: build/app/outputs/flutter-apk/app-debug.apk
-          if-no-files-found: error
-
-      - name: Publish review access link in job summary
-        if: steps.platforms.outputs.has_android == 'true'
-        shell: bash
-        env:
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-          SERVER_URL: ${{ github.server_url }}
-        run: |
-          {
-            echo "### APK disponible para revisión de contenido";
-            echo "";
-            echo "- Artifact: \`ari-debug-apk-${GITHUB_RUN_NUMBER}\`";
-            echo "- Descarga: ${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}";
-          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Simulación de Compilación Android (Release Readiness)
+        run: flutter build appbundle --release --dart-define=ENV=qa

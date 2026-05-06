@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'logger_service.dart';
 
 class AuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -13,8 +14,8 @@ class AuthService {
   Future<UserCredential?> signUpAnonymously() async {
     try {
       return await _firebaseAuth.signInAnonymously();
-    } catch (e) {
-      print('Error en sign up anónimo: $e');
+    } catch (e, st) {
+      LoggerService.error('Error en sign up anónimo', e, stackTrace: st);
       return null;
     }
   }
@@ -29,8 +30,8 @@ class AuthService {
         email: email,
         password: password,
       );
-    } catch (e) {
-      print('Error en sign up: $e');
+    } catch (e, st) {
+      LoggerService.error('Error en sign up', e, stackTrace: st);
       return null;
     }
   }
@@ -45,8 +46,8 @@ class AuthService {
         email: email,
         password: password,
       );
-    } catch (e) {
-      print('Error en login: $e');
+    } catch (e, st) {
+      LoggerService.error('Error en login', e, stackTrace: st);
       return null;
     }
   }
@@ -60,8 +61,8 @@ class AuthService {
   Future<void> resetPassword(String email) async {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email);
-    } catch (e) {
-      print('Error en reset: $e');
+    } catch (e, st) {
+      LoggerService.error('Error en reset', e, stackTrace: st);
     }
   }
 }

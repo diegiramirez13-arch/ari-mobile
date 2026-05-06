@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/chat_message.dart';
+import '../services/logger_service.dart';
 
 class ChatRepository {
   ChatRepository({FirebaseFirestore? firestore})
@@ -43,5 +44,24 @@ class ChatRepository {
       batch.delete(doc.reference);
     }
     await batch.commit();
+  }
+
+  Future<void> saveChatSummary(
+    String userId,
+    String userPrompt,
+    String ariResponse,
+  ) async {
+    try {
+      await _firestore.collection('users').doc(userId).collection('chats').add({
+        'prompt_summary': userPrompt.length > 50
+            ? '${userPrompt.substring(0, 50)}...'
+            : userPrompt,
+        'action_taken':
+            ariResponse.contains('Proyecto') ? 'Project Created' : 'Task Assigned',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e, stack) {
+      LoggerService.error('Error guardando resumen de chat', e, stackTrace: stack);
+    }
   }
 }

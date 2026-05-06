@@ -1,8 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/environment.dart';
 import '../models/chat_message.dart';
-import '../services/ai_service.dart';
+import '../services/ai_service_v2.dart';
+import '../services/logger_service.dart';
 
 class ChatConfig {
   final bool isProMode;
@@ -14,8 +16,8 @@ final chatConfigProvider = Provider<ChatConfig>((ref) {
   return ChatConfig(isProMode: AppEnvironment.isProMode);
 });
 
-final aiServiceProvider = Provider<AIService>((ref) {
-  return AIService(apiKey: AppEnvironment.openAIApiKey);
+final aiServiceProvider = Provider<AIServiceV2>((ref) {
+  return AIServiceV2();
 });
 
 typedef Message = ChatMessage;
@@ -53,7 +55,7 @@ final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>(
 final aiProvider = chatControllerProvider;
 
 class ChatController extends StateNotifier<ChatState> {
-  final AIService _aiService;
+  final AIServiceV2 _aiService;
 
   ChatController(this._aiService, bool isPro)
       : super(
@@ -77,15 +79,19 @@ class ChatController extends StateNotifier<ChatState> {
       isLoading: true,
     );
 
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final userId = currentUser?.uid ?? 'anonymous_session';
+
     try {
-      final responseText = await _aiService.generateResponse(input);
+      final responseText = await _aiService.processUserMessage(input, userId);
       final aiMsg = ChatMessage(content: responseText, isUser: false);
 
       state = state.copyWith(
         messages: [...state.messages, aiMsg],
         isLoading: false,
       );
-    } catch (_) {
+    } catch (e, st) {
+      LoggerService.error('Error procesando mensaje desde ChatController', e, stackTrace: st);
       final errorMsg = ChatMessage(
         content: 'Error procesando solicitud en la IA Híbrida.',
         isUser: false,
