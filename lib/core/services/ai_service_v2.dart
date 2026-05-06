@@ -1,66 +1,51 @@
-import '../models/ai_response.dart';
-import '../models/ai_service_config.dart';
-import '../models/chat_mode.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'ai_backend.dart';
-import 'gemini_backend.dart';
 import 'local_backend.dart';
 import 'openai_backend.dart';
 
 class AIServiceV2 {
-  final List<AIBackend> _backends;
-  final AIServiceConfig _config;
-  AIBackend? _activeBackend;
+  late AIBackend _activeBackend;
 
-  AIServiceV2({AIServiceConfig? config})
-      : _config = config ?? const AIServiceConfig(),
-        _backends = [OpenAIBackend(), GeminiBackend(), LocalBackend()] {
-    _selectBackend();
+  // Manejo de memoria y contexto (últimos 6 mensajes)
+  final List<Map<String, String>> _contextHistory = [];
+
+  AIServiceV2() {
+    _initializeBackend();
   }
 
-  void _selectBackend() {
-    if (_config.mode == ChatMode.basic) {
-      _activeBackend = _backends.firstWhere((b) => b is LocalBackend);
-      return;
+  void _initializeBackend() {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey != null && apiKey.isNotEmpty && apiKey != 'sk-dummy-key') {
+      _activeBackend = OpenAIBackend();
+    } else {
+      _activeBackend = LocalBackend();
     }
+  }
 
-    for (final backend in _backends) {
-      if (backend is! LocalBackend && backend.isAvailable && _config.hasApiKey) {
-        _activeBackend = backend;
-        return;
+  Future<String> processUserMessage(String prompt) async {
+    try {
+      _contextHistory.add({'role': 'user', 'content': prompt});
+
+      if (_contextHistory.length > 6) {
+        _contextHistory.removeAt(0);
       }
-    }
 
-    _activeBackend = _backends.firstWhere((b) => b is LocalBackend);
-  }
+      final response = await _activeBackend.generateResponse(prompt);
 
-  String get activeBackendName => _activeBackend?.name ?? 'Ninguno';
+      _contextHistory.add({'role': 'assistant', 'content': response});
 
-  Future<AIResponse> sendMessage(String prompt) async {
-    if (_activeBackend == null) {
-      return AIResponse.error('No hay backend disponible', code: 'NO_BACKEND');
-    }
-    return _activeBackend!.sendMessage(prompt, _config);
-  }
-
-  void switchMode(ChatMode mode) {
-    if (mode == ChatMode.basic) {
-      _activeBackend = _backends.firstWhere((b) => b is LocalBackend);
-      return;
-    }
-
-    for (final backend in _backends) {
-      if (backend is! LocalBackend && backend.isAvailable && _config.hasApiKey) {
-        _activeBackend = backend;
-        return;
+      if (_contextHistory.length > 6) {
+        _contextHistory.removeAt(0);
       }
-    }
 
-    _activeBackend = _backends.firstWhere((b) => b is LocalBackend);
+      return response;
+    } catch (e) {
+      return 'ARI Error de Ejecución: Ocurrió un problema de conexión ($e). Pasando a modo seguro.';
+    }
   }
 
-  void dispose() {
-    for (final backend in _backends) {
-      backend.dispose();
-    }
+  void clearMemory() {
+    _contextHistory.clear();
   }
 }
