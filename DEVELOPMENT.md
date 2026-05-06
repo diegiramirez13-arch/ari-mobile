@@ -1,18 +1,21 @@
-# ARI Mobile - Asistente de Inteligencia Aplicada
+# ARI Mobile - Bitácora de Desarrollo Oficial
 
-## Estado de Desarrollo y Roadmap Técnico
+**Estado Actual:** MVP Funcional y Validación CI/CD Activa.
+**Filosofía:** Acción > Charla.
 
-- [x] **Paso 1:** Setup de dependencias y estructura base.
-- [x] **Paso 2:** Integración Firebase (Auth + Firestore).
-- [x] **Paso 3:** Implementación del perfil de usuario completo.
-- [x] **Paso 4:** Gestión de estado unificada con Riverpod.
-- [ ] **Paso 5: Integración IA Híbrida (EN PROGRESO - PARCIALMENTE IMPLEMENTADO)**
-  - [x] Lógica de feature flag (Basic/Pro) mediante `OPENAI_API_KEY`.
-  - [x] Servicio `AIService` integrado con `openai_dart`.
-  - [x] Adaptación de UI de Chat al contrato único (`ChatMessage`).
-  - [ ] Reestructurar tests para que coincidan con los nuevos contratos.
-  - [ ] Parser de intenciones (creación automática de proyectos desde el chat).
+## Hoja de Ruta de Implementación
 
-## Siguiente Foco de Acción:
-* Saneamiento de dependencias y pruebas unitarias de `ai_provider` y `ai_service`.
-* Vincular vista de proyectos a Firestore (Persistencia Real).
+- [x] **PASO 1:** Arquitectura Base y Setup Inicial.
+- [x] **PASO 2:** Integración Firebase (Auth funcional).
+- [x] **PASO 3:** Módulo de Perfil y UI Dark Premium.
+- [x] **PASO 4:** Gestión de Estado con Riverpod.
+- [x] **PASO 5:** Inteligencia Híbrida y Orquestación (COMPLETADO).
+  - Implementación de `AIServiceV2` (OpenAI + LocalBackend).
+  - Safety wrapper (try/catch) contra fallos de red.
+  - Memoria de contexto de corto plazo (6 mensajes).
+- [x] **QA & CI/CD:** Pipeline de validación en GitHub Actions integrado. Tests alineados con el código vigente.
+
+## Siguientes Pasos (Roadmap Enterprise)
+1. Conectar persistencia profunda de `ChatRepository` a Firestore.
+2. Generar compilación `.apk` final con Keystore.
+3. Desplegar demo en Play Store.
