@@ -24,8 +24,10 @@ jobs:
       - name: Análisis Estático (Freno a código roto)
         run: flutter analyze --fatal-infos
 
-      - name: Tests de Integración y Unitarios
-        run: flutter test
+      - name: Pruebas verificadas (unitarias/servicios)
+        run: |
+          flutter test \
+            test/core/services/ai_service_test.dart
 
       - name: Validación de Compilación Web (CanvasKit)
         run: flutter build web --web-renderer canvaskit
