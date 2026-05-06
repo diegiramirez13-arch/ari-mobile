@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/ai_provider.dart';
-import '../profile/profile_screen.dart';
-import '../projects/projects_screen.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -29,7 +27,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final proMode = config.isProMode || state.isProMode;
 
     return Scaffold(
-      appBar: _buildAppBar(context, controller, proMode),
+      appBar: _buildChatAppBar(context, controller, proMode),
       body: Column(
         children: [
           Expanded(child: _buildMessageList(state)),
@@ -40,7 +38,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(
+  AppBar _buildChatAppBar(
     BuildContext context,
     ChatController controller,
     bool proMode,
@@ -53,30 +51,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: proMode ? Colors.amber : Colors.grey.shade700,
+              color: proMode
+                  ? Colors.amber.withOpacity(0.2)
+                  : Colors.grey.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              proMode ? 'PRO' : 'BÁSICO',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: proMode ? Colors.black : Colors.white,
-              ),
+            child: Row(
+              children: [
+                if (proMode)
+                  const Icon(Icons.bolt, color: Colors.amber, size: 16),
+                Text(
+                  proMode ? ' PRO' : ' BÁSICO',
+                  style: TextStyle(
+                    color: proMode ? Colors.amber : Colors.grey,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
+          icon: const Icon(Icons.folder_special, color: Colors.cyan),
           tooltip: 'Proyectos',
-          icon: const Icon(Icons.folder_outlined),
-          onPressed: () => _navigateTo(const ProjectsScreen()),
+          onPressed: () => Navigator.pushNamed(context, '/projects'),
         ),
         IconButton(
+          icon: const Icon(Icons.person, color: Colors.white70),
           tooltip: 'Perfil',
-          icon: const Icon(Icons.person_outline),
-          onPressed: () => _navigateTo(const ProfileScreen()),
+          onPressed: () => Navigator.pushNamed(context, '/profile'),
         ),
         IconButton(
           icon: const Icon(Icons.delete_outline),
@@ -173,9 +179,5 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     ref.read(chatControllerProvider.notifier).sendMessage(trimmed);
     _messageController.clear();
-  }
-
-  void _navigateTo(Widget screen) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 }
