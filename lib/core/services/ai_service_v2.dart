@@ -1,6 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'ai_backend.dart';
+import 'logger_service.dart';
 import 'local_backend.dart';
 import 'openai_backend.dart';
 
@@ -40,7 +41,8 @@ class AIServiceV2 {
       }
 
       return response;
-    } catch (e) {
+    } catch (e, stack) {
+      LoggerService.error('Fallo en IA', e, stackTrace: stack);
       return 'ARI Error de Ejecución: Ocurrió un problema de conexión ($e). Pasando a modo seguro.';
     }
   }
