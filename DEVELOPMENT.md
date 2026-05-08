@@ -1,18 +1,11 @@
-# ARI Mobile - Asistente de Inteligencia Aplicada
+# ARI Mobile - Bitácora de Desarrollo Oficial (Única Fuente de Verdad)
 
-## Estado de Desarrollo y Roadmap Técnico
+> ⚠️ **AVISO DE ARQUITECTURA:** Este documento invalida cualquier auditoría técnica previa (incluyendo la del 13-abr-2026). El estado reflejado aquí es el estado oficial del código en `main`.
 
-- [x] **Paso 1:** Setup de dependencias y estructura base.
-- [x] **Paso 2:** Integración Firebase (Auth + Firestore).
-- [x] **Paso 3:** Implementación del perfil de usuario completo.
-- [x] **Paso 4:** Gestión de estado unificada con Riverpod.
-- [ ] **Paso 5: Integración IA Híbrida (EN PROGRESO - PARCIALMENTE IMPLEMENTADO)**
-  - [x] Lógica de feature flag (Basic/Pro) mediante `OPENAI_API_KEY`.
-  - [x] Servicio `AIService` integrado con `openai_dart`.
-  - [x] Adaptación de UI de Chat al contrato único (`ChatMessage`).
-  - [ ] Reestructurar tests para que coincidan con los nuevos contratos.
-  - [ ] Parser de intenciones (creación automática de proyectos desde el chat).
+**Estado Actual:** MVP Funcional y Validación CI/CD Activa.
+**Filosofía:** Acción > Charla.
 
-## Siguiente Foco de Acción:
-* Saneamiento de dependencias y pruebas unitarias de `ai_provider` y `ai_service`.
-* Vincular vista de proyectos a Firestore (Persistencia Real).
+## Hoja de Ruta de Implementación
+- [x] **PASOS 1 al 4:** Arquitectura, Firebase, UI Dark Premium y Riverpod (COMPLETADOS).
+- [x] **PASO 5:** Inteligencia Híbrida y Orquestación (`AIServiceV2`) + Pipeline CI/CD (COMPLETADOS).
+- [ ] **PASO 6 (RELEASE):** Persistencia en Firestore, Observabilidad (Logs) y APK Firmada (EN PROCESO).

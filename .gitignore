@@ -5,3 +5,7 @@
 
 # Firebase config (generated in CI)
 android/app/google-services.json
+
+# Android signing secrets
+android/key.properties
+*.jks

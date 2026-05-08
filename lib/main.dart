@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firebase_options.dart';
@@ -9,29 +12,38 @@ import 'core/providers/ai_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/profile_provider.dart';
 import 'core/services/admob_service.dart';
+import 'core/services/logger_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/chat/chat_screen.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await AdMobService.initialize();
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await AdMobService.initialize();
 
-  // Cargar variables de entorno y feature flags antes de inicializar servicios.
-  configureEnvironment();
+    await dotenv.load(fileName: '.env', isOptional: true);
+    configureEnvironment();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  final bootstrapContainer = ProviderContainer();
-  bootstrapContainer.read(chatConfigProvider);
-  bootstrapContainer.read(aiServiceProvider);
+    final bootstrapContainer = ProviderContainer();
+    bootstrapContainer.read(chatConfigProvider);
+    bootstrapContainer.read(aiServiceProvider);
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+    runApp(
+      const ProviderScope(
+        child: MyApp(),
+      ),
+    );
+  }, (error, stack) {
+    LoggerService.error(
+      'Error Fatal No Capturado',
+      error,
+      stackTrace: stack,
+    );
+  });
 }
 
 class MyApp extends ConsumerWidget {
