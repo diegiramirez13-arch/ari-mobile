@@ -1,4 +1,4 @@
-name: ARI Mobile CI/CD Pipeline
+name: Flutter CI
 
 on:
   push:
@@ -7,27 +7,21 @@ on:
     branches: [ main ]
 
 jobs:
-  quality_gate:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Clonar Repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.16.0'
 
-      - name: Instalar Dependencias
-        run: flutter pub get
+      - run: flutter pub get
 
-      - name: Análisis Estático (Freno a código roto)
-        run: flutter analyze --fatal-infos
+      - run: flutter analyze --fatal-infos
 
-      - name: Pruebas verificadas (unitarias/servicios)
-        run: |
-          flutter test \
-            test/core/services/ai_service_test.dart
+      # 👇 CAMBIO CLAVE
+      - run: flutter test
 
-      - name: Validación de Compilación Web (CanvasKit)
-        run: flutter build web --web-renderer canvaskit
+      - run: flutter build web --web-renderer canvaskit
