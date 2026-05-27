@@ -14,19 +14,15 @@ dependencies:
 
   # Persistencia local
   shared_preferences: ^2.2.2
-  sqflite: ^2.3.0
 
   # State management & architecture
-  provider: ^6.1.0
   riverpod: ^2.4.0
   flutter_riverpod: ^2.5.1
-  get_it: ^7.6.0
 
   # HTTP & networking
-  dio: ^5.4.0
   openai_dart: ^0.4.5
 
-  # Firebase (preparado para paso 2)
+  # Firebase
   firebase_core: ^3.0.0
   firebase_auth: ^5.0.0
   cloud_firestore: ^4.14.0
@@ -40,7 +36,7 @@ dependencies:
   intl: ^0.19.0
   uuid: ^4.0.0
 
-  # Debugging & Analytics (opcional)
+  # Debugging & Analytics
   logger: ^2.2.0
   flutter_dotenv: ^5.1.0
 
@@ -60,16 +56,5 @@ dependency_overrides:
 flutter:
   uses-material-design: true
 
-  # Assets (preparado para futuros recursos)
   assets:
     - .env
-    - assets/images/
-    - assets/icons/
-
-  # Fonts (preparado para Google Fonts)
-  fonts:
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/Poppins-Regular.ttf
-        - asset: assets/fonts/Poppins-Bold.ttf
-          weight: 700
