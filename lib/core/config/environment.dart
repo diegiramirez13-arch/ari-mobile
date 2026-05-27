@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppEnvironment {
   static Future<void> setup() async {
-    await dotenv.load(fileName: '.env');
+    await dotenv.load(fileName: '.env', isOptional: true);
     validate();
   }
 
@@ -16,20 +16,11 @@ class AppEnvironment {
 
   static void validate() {
     if (isProd && openAIApiKey.isEmpty) {
-      throw Exception('OPENAI_API_KEY requerida en producción');
+      throw Exception('OPENAI_API_KEY required in production');
     }
 
     if (isDev) {
       debugPrint('🔧 Environment: $currentEnv | Pro mode: $isProMode');
     }
   }
-}
-
-class AppEnvironment {
-  static const openAIApiKey = Environment.openAiApiKey;
-  static bool get isProMode => Environment.isProMode;
-}
-
-void configureEnvironment() {
-  Environment.validate();
 }
