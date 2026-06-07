@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isBackendService() {
+      return isSignedIn()
+        && request.auth.token.backend_service == true;
+    }
+
+    match /users/{userId} {
+      allow read, create, update, delete: if isOwner(userId);
+
+      match /messages/{messageId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /chats/{chatId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /projects/{projectId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /user_missions/{missionId} {
+        allow read, create, update, delete: if isOwner(userId);
+
+        match /status/{statusDoc=**} {
+          allow read, create, update, delete: if isOwner(userId);
+        }
+      }
+
+      match /subscriptions/{subscriptionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update, delete: if isBackendService();
+      }
+    }
+
+    match /public_data/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
