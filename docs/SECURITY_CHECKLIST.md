@@ -6,13 +6,13 @@
 - [ ] `PAYPAL_SECRET` no se incluye en builds release.
 - [ ] La app usa Firebase ID tokens para llamar al backend.
 - [ ] Los logs redactan tokens, claves y datos financieros.
-- [ ] Las URLs productivas se configuran por entorno.
+- [ ] Las URLs productivas se configuran por entorno (`BACKEND_URL` o `CLOUD_RUN_BACKEND_URL`).
 
 ## Backend Cloud Run
 
 - [ ] `--no-allow-unauthenticated` activo si la API requiere IAM.
 - [ ] El backend valida Firebase ID tokens en cada endpoint privado.
-- [ ] Secret Manager es la única fuente de secretos productivos.
+- [ ] Secret Manager es la única fuente de secretos productivos para OpenAI, Kimi, Gemini y PayPal.
 - [ ] La cuenta de servicio usa permisos mínimos.
 - [ ] Rate limiting por usuario/IP habilitado.
 - [ ] CORS restringido a dominios esperados.

@@ -29,7 +29,9 @@ class CloudSecrets {
   }
 
   static String get backendUrl {
-    final configured = _read('BACKEND_URL');
+    final configured = _readAny(
+      const <String>['BACKEND_URL', 'CLOUD_RUN_BACKEND_URL'],
+    );
     if (configured.isNotEmpty) {
       return configured;
     }
@@ -45,6 +47,16 @@ class CloudSecrets {
         String.fromEnvironment(key, defaultValue: defaultValue);
   }
 
+  static String _readAny(List<String> keys, {String defaultValue = ''}) {
+    for (final key in keys) {
+      final value = _read(key);
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+    return defaultValue;
+  }
+
   /// Emits safe configuration warnings without printing any secret values.
   static void validate() {
     final errors = <String>[];
@@ -57,7 +69,7 @@ class CloudSecrets {
     }
 
     if (backendUrl.isEmpty) {
-      errors.add('BACKEND_URL no configurada.');
+      errors.add('BACKEND_URL o CLOUD_RUN_BACKEND_URL no configurada.');
     }
 
     if (errors.isNotEmpty) {

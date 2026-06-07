@@ -4,15 +4,23 @@
 
 ```bash
 flutter pub get
+dart format \
+  lib/core/models/ai_response.dart \
+  lib/core/config/cloud_secrets.dart \
+  lib/core/services/cloud_run_backend.dart \
+  lib/core/services/openai_backend.dart \
+  lib/core/services/kimi_backend.dart \
+  lib/core/services/gemini_backend.dart \
+  lib/core/services/hybrid_ai_orchestrator.dart
 flutter analyze
 flutter test
 ```
 
-Validar que el fallback local responde sin claves de IA.
+Validar que el fallback local responde sin claves de IA y que el orquestador no convierte errores de proveedor en respuestas exitosas.
 
 ## Fase 2: Local con API keys de desarrollo
 
-Crear `.env` desde `.env.example` y definir claves de sandbox/desarrollo. Nunca usar claves productivas en máquinas no confiables.
+Crear `.env` desde `.env.example` y definir claves de sandbox/desarrollo (`OPENAI_API_KEY`, `KIMI_API_KEY`, `GEMINI_API_KEY`). Nunca usar claves productivas en máquinas no confiables.
 
 ```bash
 flutter test test/core/services
@@ -64,7 +72,7 @@ curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 - Intentar leer datos de otro usuario en Firestore: debe fallar.
 - Llamar endpoints sin token: debe responder `401`.
 - Llamar endpoints con token expirado: debe responder `401`.
-- Simular proveedor IA caído: debe activar fallback.
+- Simular proveedor IA caído: debe activar fallback en orden OpenAI GPT-4o → Kimi Moonshot → Gemini → Local.
 
 ## Fase 8: Load testing controlado
 

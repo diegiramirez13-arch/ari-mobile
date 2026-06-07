@@ -67,7 +67,7 @@ Health check usado por la app y por CI/CD. Debe responder rápido y sin consulta
 ## Estrategia de secretos
 
 - Las API keys de OpenAI, Kimi, Gemini y el secreto de PayPal viven en Google Secret Manager.
-- La app Flutter puede leer claves locales solo para desarrollo, nunca como requisito de producción.
+- La app Flutter puede leer claves locales solo para desarrollo/fallback offline; en producción la ruta principal debe ser Cloud Run.
 - Cloud Run usa una cuenta de servicio con permisos mínimos.
 - Los logs nunca deben imprimir tokens, API keys ni payloads completos de usuarios.
 
@@ -86,5 +86,6 @@ Registrar en Cloud Logging:
 - [ ] Firebase Auth valida tokens desde Android, iOS y Web.
 - [ ] Firestore Rules bloquean acceso cruzado entre usuarios.
 - [ ] Secret Manager contiene todas las claves requeridas.
+- [ ] Fallback móvil validado en cascada: OpenAI GPT-4o → Kimi Moonshot → Gemini → Local.
 - [ ] PayPal usa credenciales live solo en producción.
 - [ ] Alertas configuradas para error rate, latencia y costos.
