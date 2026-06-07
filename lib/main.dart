@@ -16,6 +16,46 @@ import 'core/services/logger_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/chat/chat_screen.dart';
 
+const Color _ariPrimary = Color(0xFF00E5FF);
+const Color _ariBackground = Color(0xFF050A14);
+const Color _ariSurface = Color(0xFF0B1220);
+
+ThemeData buildAriDarkTheme() {
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: _ariPrimary,
+    brightness: Brightness.dark,
+    surface: _ariSurface,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: _ariBackground,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: _ariSurface,
+      foregroundColor: Colors.white,
+      centerTitle: true,
+      elevation: 0,
+    ),
+    cardColor: _ariSurface,
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: _ariSurface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: _ariPrimary, width: 1.4),
+      ),
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: _ariPrimary,
+    ),
+  );
+}
+
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -56,13 +96,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'ARI - Asistente de IA',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.cyan,
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: buildAriDarkTheme(),
       home: const AuthWrapper(),
     );
   }
