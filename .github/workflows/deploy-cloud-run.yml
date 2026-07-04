@@ -1,0 +1,78 @@
+name: Deploy ARI Backend to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - production
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-cloud-run.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      PROJECT_ID: ari-ai-prod
+      REGION: us-central1
+      SERVICE_NAME: ari-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker --quiet
+
+      - name: Build Docker image
+        env:
+          IMAGE_NAME: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
+        run: |
+          docker build \
+            -t "$IMAGE_NAME:${{ github.sha }}" \
+            -t "$IMAGE_NAME:latest" \
+            server/
+
+      - name: Push to Google Container Registry
+        env:
+          IMAGE_NAME: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
+        run: |
+          docker push "$IMAGE_NAME:${{ github.sha }}"
+          docker push "$IMAGE_NAME:latest"
+
+      - name: Deploy to Cloud Run
+        env:
+          IMAGE_NAME: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}
+        run: |
+          gcloud run deploy "${{ env.SERVICE_NAME }}" \
+            --image "$IMAGE_NAME:${{ github.sha }}" \
+            --platform managed \
+            --region "${{ env.REGION }}" \
+            --no-allow-unauthenticated \
+            --set-env-vars "ENVIRONMENT=production" \
+            --memory 512Mi \
+            --timeout 300s \
+            --max-instances 100 \
+            --service-account "ari-backend@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
+
+      - name: Run smoke tests
+        run: |
+          SERVICE_URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" \
+            --region "${{ env.REGION }}" \
+            --format 'value(status.url)')
+
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+            "$SERVICE_URL/api/system-status" | jq .

@@ -1,8 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/cloud_secrets.dart';
 import '../config/environment.dart';
 import '../models/chat_message.dart';
-import '../services/ai_service.dart';
+import '../models/chat_mode.dart';
+import '../services/hybrid_ai_orchestrator.dart';
+
+final openAIApiKeyProvider = Provider<String>((ref) => AppEnvironment.openAIApiKey);
 
 class ChatConfig {
   final bool isProMode;
@@ -11,11 +15,16 @@ class ChatConfig {
 }
 
 final chatConfigProvider = Provider<ChatConfig>((ref) {
-  return ChatConfig(isProMode: AppEnvironment.isProMode);
+  final hasOpenAIKey = ref.watch(openAIApiKeyProvider).isNotEmpty;
+  return ChatConfig(isProMode: hasOpenAIKey || CloudSecrets.hasConfiguredBackendUrl);
 });
 
-final aiServiceProvider = Provider<AIService>((ref) {
-  return AIService(apiKey: AppEnvironment.openAIApiKey);
+final hybridAIOrchestratorProvider = Provider<HybridAIOrchestrator>((ref) {
+  final orchestrator = HybridAIOrchestrator(
+    preferCloudRun: CloudSecrets.hasConfiguredBackendUrl,
+  )..initialize();
+  ref.onDispose(orchestrator.dispose);
+  return orchestrator;
 });
 
 typedef Message = ChatMessage;
@@ -23,40 +32,55 @@ typedef Message = ChatMessage;
 class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
-  final bool isProMode;
+  final ChatMode mode;
+  final String? error;
 
-  ChatState({
-    required this.messages,
+  const ChatState({
+    this.messages = const <ChatMessage>[],
     this.isLoading = false,
-    this.isProMode = false,
+    this.mode = ChatMode.basic,
+    this.error,
   });
+
+  bool get isProMode => mode == ChatMode.pro || mode == ChatMode.enterprise;
 
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
-    bool? isProMode,
+    ChatMode? mode,
+    String? error,
+    bool clearError = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
-      isProMode: isProMode ?? this.isProMode,
+      mode: mode ?? this.mode,
+      error: clearError ? null : error ?? this.error,
     );
   }
 }
 
 final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>((ref) {
   final config = ref.watch(chatConfigProvider);
-  final service = ref.watch(aiServiceProvider);
-  return ChatController(service, config.isProMode);
+  final openAIKey = ref.watch(openAIApiKeyProvider);
+  final orchestrator = ref.watch(hybridAIOrchestratorProvider);
+  return ChatController(
+    orchestrator: orchestrator,
+    hasProAccess: config.isProMode,
+    hasOpenAIKey: openAIKey.isNotEmpty,
+  );
 });
 
 final aiProvider = chatControllerProvider;
 
 class ChatController extends StateNotifier<ChatState> {
-  final AIService _aiService;
-
-  ChatController(this._aiService, bool isPro)
-      : super(
+  ChatController({
+    required HybridAIOrchestrator orchestrator,
+    required bool hasProAccess,
+    required bool hasOpenAIKey,
+  })  : _orchestrator = orchestrator,
+        _hasOpenAIKey = hasOpenAIKey,
+        super(
           ChatState(
             messages: [
               ChatMessage(
@@ -64,9 +88,12 @@ class ChatController extends StateNotifier<ChatState> {
                 isUser: false,
               ),
             ],
-            isProMode: isPro,
+            mode: hasProAccess ? ChatMode.pro : ChatMode.basic,
           ),
         );
+
+  final HybridAIOrchestrator _orchestrator;
+  final bool _hasOpenAIKey;
 
   Future<void> sendMessage(String input) async {
     if (input.trim().isEmpty) return;
@@ -75,38 +102,68 @@ class ChatController extends StateNotifier<ChatState> {
     state = state.copyWith(
       messages: [...state.messages, userMsg],
       isLoading: true,
+      clearError: true,
     );
 
     try {
-      final responseText = await _aiService.generateResponse(input);
-      final aiMsg = ChatMessage(content: responseText, isUser: false);
+      final response = await _orchestrator.getResponse(input);
+      final aiMsg = ChatMessage(
+        content: response.text,
+        isUser: false,
+        isError: response.isError,
+      );
 
       state = state.copyWith(
         messages: [...state.messages, aiMsg],
         isLoading: false,
+        error: response.isError ? response.errorCode : null,
+        clearError: !response.isError,
       );
     } catch (_) {
+      const fallbackError = 'Error procesando solicitud en la IA Híbrida.';
       final errorMsg = ChatMessage(
-        content: 'Error procesando solicitud en la IA Híbrida.',
+        content: fallbackError,
         isUser: false,
         isError: true,
       );
       state = state.copyWith(
         messages: [...state.messages, errorMsg],
         isLoading: false,
+        error: fallbackError,
       );
     }
   }
 
-  void clearChat() {
+  void toggleMode() {
+    if (state.mode == ChatMode.basic && !_hasOpenAIKey) {
+      state = state.copyWith(
+        error: 'Configurá OPENAI_API_KEY para activar modo Pro local.',
+      );
+      return;
+    }
+
+    final nextMode = state.mode == ChatMode.basic ? ChatMode.pro : ChatMode.basic;
+    final modeMsg = ChatMessage(
+      content: 'Modo cambiado a ${nextMode == ChatMode.pro ? 'PRO' : 'BÁSICO'}.',
+      isUser: false,
+    );
+
     state = state.copyWith(
+      mode: nextMode,
+      messages: [...state.messages, modeMsg],
+      clearError: true,
+    );
+  }
+
+  void clearChat() {
+    state = ChatState(
       messages: [
         ChatMessage(
           content: 'Chat reiniciado. ¿En qué te ayudo, Capitán?',
           isUser: false,
         ),
       ],
-      isLoading: false,
+      mode: state.mode,
     );
   }
 }
