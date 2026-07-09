@@ -27,7 +27,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final proMode = config.isProMode || state.isProMode;
 
     return Scaffold(
-      appBar: _buildChatAppBar(context, controller, proMode),
+      appBar: _buildChatAppBar(context, controller, proMode, state.activeProvider),
       body: Column(
         children: [
           Expanded(child: _buildMessageList(state)),
@@ -42,7 +42,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     BuildContext context,
     ChatController controller,
     bool proMode,
+    String? activeProvider,
   ) {
+    String providerLabel = activeProvider ?? 'standby';
+    IconData providerIcon = Icons.router;
+    Color providerColor = Colors.cyan;
+
+    if (activeProvider == 'backend') {
+      providerIcon = Icons.cloud;
+      providerColor = Colors.blue;
+    } else if (activeProvider == 'openai') {
+      providerIcon = Icons.psychology;
+      providerColor = Colors.green;
+    } else if (activeProvider == 'local_fallback') {
+      providerIcon = Icons.memory;
+      providerColor = Colors.orange;
+    }
+
     return AppBar(
       title: Row(
         children: [
@@ -51,15 +67,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: proMode
-                  ? Colors.amber.withOpacity(0.2)
-                  : Colors.grey.withOpacity(0.2),
+              color: proMode ? Colors.amber.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                if (proMode)
-                  const Icon(Icons.bolt, color: Colors.amber, size: 16),
+                if (proMode) const Icon(Icons.bolt, color: Colors.amber, size: 16),
                 Text(
                   proMode ? ' PRO' : ' BÁSICO',
                   style: TextStyle(
@@ -71,9 +84,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 12),
+          // Provider indicator
+          Tooltip(
+            message: 'Provider: $providerLabel',
+            child: Icon(providerIcon, color: providerColor, size: 14),
+          ),
         ],
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.router, color: Colors.cyan, size: 18),
+          tooltip: 'System Status',
+          onPressed: () => _showSystemStatus(context, controller),
+        ),
         IconButton(
           icon: const Icon(Icons.folder_special, color: Colors.cyan),
           tooltip: 'Proyectos',
@@ -90,6 +114,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       ],
     );
+  }
+
+  void _showSystemStatus(BuildContext context, ChatController controller) async {
+    final status = await controller.getSystemStatus();
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🔧 System Status'),
+        content: SingleChildScrollView(
+          child: Text(
+            _formatSystemStatus(status),
+            style: const TextStyle(fontFamily: 'Courier', fontSize: 12),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatSystemStatus(Map<String, dynamic> status) {
+    final buffer = StringBuffer();
+    status.forEach((key, value) {
+      buffer.writeln('$key: $value');
+    });
+    return buffer.toString();
   }
 
   Widget _buildMessageList(ChatState state) {
