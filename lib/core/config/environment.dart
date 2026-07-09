@@ -10,6 +10,18 @@ class AppEnvironment {
   static String get openAIApiKey => dotenv.env['OPENAI_API_KEY'] ?? '';
   static bool get isProMode => openAIApiKey.isNotEmpty;
 
+  /// Backend URL from .env (CLOUD_RUN_BACKEND_URL preferred)
+  static String get backendUrl {
+    final cloudRun = dotenv.env['CLOUD_RUN_BACKEND_URL'] ?? '';
+    if (cloudRun.isNotEmpty) return cloudRun;
+    
+    final fallback = dotenv.env['BACKEND_URL'] ?? '';
+    if (fallback.isNotEmpty) return fallback;
+    
+    // Local development default
+    return isDev ? 'http://localhost:3000' : 'https://ari-backend-prod.a.run.app';
+  }
+
   static String get currentEnv => dotenv.env['ENV'] ?? 'dev';
   static bool get isDev => currentEnv == 'dev';
   static bool get isProd => currentEnv == 'prod';
@@ -21,6 +33,7 @@ class AppEnvironment {
 
     if (isDev) {
       debugPrint('🔧 Environment: $currentEnv | Pro mode: $isProMode');
+      debugPrint('🌐 Backend: $backendUrl');
     }
   }
 }
