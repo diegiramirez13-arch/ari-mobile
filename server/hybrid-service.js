@@ -31,29 +31,18 @@ function parseGeminiText(data) {
   return typeof firstPart?.text === 'string' ? firstPart.text : 'Sin respuesta';
 }
 
+function parseAnthropicText(data) {
+  const content = Array.isArray(data.content) ? data.content : [];
+  const firstBlock = getObject(content[0]);
+  return typeof firstBlock?.text === 'string' ? firstBlock.text : 'Sin respuesta';
+}
+
 const providers = [
   {
     provider: 'openai',
     model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
     apiKey: process.env.OPENAI_API_KEY,
     endpoint: 'https://api.openai.com/v1/chat/completions',
-    buildBody: (prompt, model) => ({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
-    }),
-    parseText: parseOpenAICompatibleText,
-    parseTokens: parseOpenAICompatibleTokens,
-  },
-  {
-    provider: 'kimi',
-    model: process.env.KIMI_MODEL ?? 'moonshot-v1-8k',
-    apiKey: process.env.KIMI_API_KEY,
-    endpoint: 'https://api.moonshot.ai/v1/chat/completions',
     buildBody: (prompt, model) => ({
       model,
       messages: [
@@ -84,6 +73,43 @@ const providers = [
     parseText: parseGeminiText,
     parseTokens: () => undefined,
   },
+  {
+    provider: 'kimi',
+    model: process.env.KIMI_MODEL ?? 'moonshot-v1-8k',
+    apiKey: process.env.KIMI_API_KEY,
+    endpoint: 'https://api.moonshot.ai/v1/chat/completions',
+    buildBody: (prompt, model) => ({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    }),
+    parseText: parseOpenAICompatibleText,
+    parseTokens: parseOpenAICompatibleTokens,
+  },
+  {
+    provider: 'anthropic',
+    model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-20241022',
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    buildBody: (prompt, model) => ({
+      model,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 500,
+      temperature: 0.7,
+    }),
+    parseText: parseAnthropicText,
+    parseTokens: (data) => {
+      const usage = getObject(data.usage);
+      return typeof usage?.output_tokens === 'number'
+        ? usage.output_tokens
+        : undefined;
+    },
+  },
 ];
 
 function resolveEndpoint(config) {
@@ -106,7 +132,10 @@ async function callProvider(config, prompt) {
     'Content-Type': 'application/json; charset=utf-8',
   };
 
-  if (config.provider !== 'gemini') {
+  if (config.provider === 'anthropic') {
+    headers['x-api-key'] = config.apiKey;
+    headers['anthropic-version'] = '2023-06-01';
+  } else if (config.provider !== 'gemini') {
     headers.Authorization = `Bearer ${config.apiKey}`;
   }
 

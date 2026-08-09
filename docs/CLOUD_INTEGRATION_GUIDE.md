@@ -31,7 +31,8 @@ Flutter App
 El backend esperado por la app móvil y por el workflow vive en `server/`.
 Expone `GET /api/system-status`, `POST /api/chat/hybrid` y
 `POST /api/paypal/activate-plan`, usando el orquestador de proveedores en
-`server/hybrid-service.js`.
+`server/hybrid-service.js`. La lectura de AI Studio del 2026-08-09 queda
+registrada en `docs/AI_STUDIO_SYNC_READOUT_2026-08-09.md`.
 
 ## Contrato mínimo del backend
 
