@@ -3,57 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARI MÔBILE AI | Orquestador Híbrido Multi-Motor</title>
+    <title>ARI MÔBILE AI | Inteligencia Artificial Híbrida</title>
     <style>
-        body {
-            background-color: #0b0f19;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        :root {
+            --bg-dark: #07090e;
+            --card-bg: #0b0f19;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --border-color: #1e293b;
+        }
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            padding: 2rem 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
         }
         .container {
-            max-width: 600px;
-            padding: 2rem;
+            max-width: 900px;
+            width: 100%;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .badge {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            font-size: clamp(2rem, 4vw, 3rem);
+            margin-bottom: 1rem;
+            line-height: 1.2;
+            background: linear-gradient(90deg, #60a5fa, #c084fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        p {
-            color: #94a3b8;
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .hero-image-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2.5rem;
+        }
+        .hero-image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .feature-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-blue);
+        }
+        .feature-card h3 {
             font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 2rem;
+            margin-bottom: 0.5rem;
+            color: #e2e8f0;
+        }
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        .cta-section {
+            text-align: center;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2.5rem 1.5rem;
         }
         .btn {
-            background-color: #3b82f6;
+            background-color: var(--accent-blue);
             color: white;
-            padding: 0.75rem 1.5rem;
+            padding: 0.85rem 2rem;
             border-radius: 8px;
             text-decoration: none;
             font-weight: bold;
-            transition: background 0.3s;
+            display: inline-block;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         }
         .btn:hover {
             background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>ARI MÔBILE AI</h1>
-        <p>Plataforma de inteligencia artificial desarrollada en Argentina. Orquestador híbrido multi-motor optimizado para dispositivos móviles.</p>
-        <a href="https://github.com/diegiramirez13-arch/ari-mobile" class="btn">Ver Repositorio en GitHub</a>
+        <header>
+            <span class="badge">🇦🇷 Villa María, Córdoba • Lanzamiento Global</span>
+            <h1>ARI MÔBILE AI</h1>
+            <p class="subtitle">La inteligencia artificial híbrida que promete ejecutar, no solo chatear. Orquestación multi-modelo avanzada con soporte nativo en español.</p>
+        </header>
+
+        <!-- Imagen principal estilo Google Noticias / Infografía -->
+        <div class="hero-image-container">
+            <img src="nombre-de-tu-imagen.png" alt="ARI MÔBILE AI - Infografía Oficial">
+        </div>
+
+        <!-- Características Clave -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>🧠 IA Híbrida Multimodelo</h3>
+                <p>Orquestación inteligente integrando GPT-4o, Gemini 1.5 Pro, Kimi 2.5 y Claude Sonnet en una sola interfaz móvil.</p>
+            </div>
+            <div class="feature-card">
+                <h3>⚡ Productividad y Ejecución</h3>
+                <p>Automatización de flujos de trabajo e integración segura con herramientas corporativas como Google Docs y Gmail.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔒 Pagos y Soporte Global</h3>
+                <p>Infraestructura preparada para el mercado internacional con pasarelas de pago seguras mediante Stripe y PayPal.</p>
+            </div>
+        </div>
+
+        <!-- Sección de Llamado a la Acción -->
+        <div class="cta-section">
+            <h2 style="margin-bottom: 1rem; font-size: 1.5rem;">Explora el Código y la Arquitectura</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Accede al repositorio oficial en GitHub para conocer el desarrollo técnico y los avances de la beta.</p>
+            <a href="https://github.com/diegiramirez13-arch/ari-mobile" class="btn" target="_blank">Ver Repositorio en GitHub</a>
+        </div>
+
+        <footer>
+            <p>© 2026 Diego Ramírez. Desarrollado en Argentina para el mundo.</p>
+        </footer>
     </div>
 </body>
 </html>
