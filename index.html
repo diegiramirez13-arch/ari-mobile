@@ -121,6 +121,7 @@
             margin-bottom: 30px;
             border-bottom: 1px solid #dadce0;
             padding-bottom: 20px;
+            flex-wrap: wrap;
         }
         .meta-info strong { color: var(--primary); }
         .content p {
@@ -136,6 +137,31 @@
             border: 1px solid #e8eaed;
         }
         
+        /* Estilos para la tabla de precios */
+        .pricing-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 1rem;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e8eaed;
+        }
+        .pricing-table th, .pricing-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e8eaed;
+        }
+        .pricing-table th {
+            background-color: #f1f3f4;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .pricing-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
         .tech-panel {
             background-color: #121212;
             color: #e8eaed;
@@ -152,7 +178,7 @@
             border-bottom: 1px solid #333;
             padding-bottom: 15px;
         }
-        .tech-panel img { border: 1px solid #444; }
+        .tech-panel img { border: 1px solid #444; width: 100%; height: auto; border-radius: 8px; margin: 20px 0;}
         .tech-panel p { color: #bdc1c6; font-size: 1.05rem; }
         
         .cta-box {
@@ -213,6 +239,7 @@
             .nav-links { flex-wrap: wrap; justify-content: center; gap: 15px; }
             h1 { font-size: 2rem; }
             .container { margin: 20px; padding: 20px; }
+            .pricing-table { display: block; overflow-x: auto; }
         }
     </style>
 </head>
@@ -230,9 +257,9 @@
 
     <div class="container">
         
-        <!-- ARTÍCULO 1: EL QUE HICIMOS AYER -->
+        <!-- ARTÍCULO 1: LA EJECUCIÓN DE AYER -->
         <article class="article-section" id="noticia-1">
-            <span class="kicker">Google Noticias | Tecnología • Argentina • Innovación</span>
+            <span class="kicker">Google Noticias • Tecnología • Argentina • Innovación • 2027</span>
             <h1>De Villa María al mundo: cómo ARI MÔBILE AI . desafía a los gigantes tecnológicos con un orquestador híbrido que ejecuta en lugar de solo chatear</h1>
             <h2 class="subtitle">Diseñada en el corazón productivo de Córdoba por el desarrollador independiente Diego Ramírez, esta plataforma unifica los motores más potentes del planeta —GPT-4o, Gemini, Claude y Kimi— en una sola interfaz móvil de alta precisión, anunciando su llegada formal al mercado global en este 2027.</h2>
             
@@ -241,40 +268,136 @@
                 <span>•</span>
                 <span>Especial para Ecosistemas de IA</span>
                 <span>•</span>
-                <time datetime="2026-11-01">Lectura de 5 min</time>
+                <span>Lectura de 5 min</span>
             </div>
 
             <div class="content">
-                <!-- ASEGURATE DE QUE ESTA IMAGEN ESTÉ SUBIDA CON ESTE NOMBRE -->
                 <img src="preview.jpg" alt="ARI MÔBILE AI - Soberanía Argentina">
                 
-                <p>En el mapa contemporáneo de la inteligencia artificial, las noticias suelen emanar de los mismos epicentros de siempre: Silicon Valley, Seattle, Londres o Shenzhen. Sin embargo, las verdaderas revoluciones a veces surgen donde la innovación se cruza con la resiliencia tecnológica.</p>
-                <p>ARI MÔBILE AI . rompe el molde tradicional de los chatbots. Su arquitectura funciona como un enrutador inteligente que decide en tiempo real qué motor de IA es el más adecuado para resolver cada tarea específica, optimizando recursos y entregando resultados sin precedentes desde el interior de Argentina para el mundo.</p>
+                <p>En el mapa contemporáneo de la inteligencia artificial, las noticias suelen emanar de los mismos epicentros de siempre: Silicon Valley, Seattle, Londres o Shenzhen. Sin embargo, las verdaderas revoluciones operativas a menudo nacen en lugares inesperados, impulsadas por ingenieros que eligen resolver problemas de fricción real en lugar de alimentar la burbuja de la conversación vacía.</p>
+                
+                <p>Desde Villa María, una ciudad agroindustrial ubicada en el corazón de la provincia de Córdoba, Argentina, el desarrollador independiente <strong>Diego Ramírez</strong> (perfil verificado en Google Developers: <a href="https://g.dev/DiegoRamirezARIMOBILEAI" target="_blank">g.dev/DiegoRamirezARIMOBILEAI</a>) ha completado la auditoría final y el despliegue de <strong>ARI MÔBILE AI .</strong>: un ecosistema móvil que subvierte el paradigma de los chatbots tradicionales para transformarse en un orquestador multi-motor orientado a la acción y la ejecución de flujos de trabajo en tiempo real.</p>
+
+                <h3 style="color: var(--google-blue); margin-top: 30px;">1. Orígenes y génesis: la rebelión contra el "chatbot pasivo"</h3>
+                <p>Durante los últimos años, el usuario medio de tecnología ha sido bombardeado con interfaces conversacionales que prometían transformar el trabajo. No obstante, la experiencia cotidiana suele toparse con un techo frustrante: si se le pide a un chatbot convencional que redacte un contrato, organice un proyecto y envíe correos, el modelo suele limitarse a escupir párrafos de texto que luego el ser humano debe copiar, formatear, verificar y trasladar manualmente.</p>
+                
+                <p>Consciente de esta brecha de productividad, Diego Ramírez inició la construcción de ARI con una premisa audaz: la inteligencia artificial no debe ser un interlocutor con el que se charla, sino una infraestructura operativa que ejecute tareas de punta a punta.</p>
+                
+                <ul style="margin-bottom: 25px; padding-left: 20px; color: #3c4043;">
+                    <li style="margin-bottom: 10px;"><strong>Kernel Local Offline:</strong> Diseñó un núcleo local de emergencia (AriCoreService) para garantizar procesamiento fuera de línea cuando fallan las redes celulares.</li>
+                    <li style="margin-bottom: 10px;"><strong>Cloud Serverless:</strong> Desplegó una arquitectura moderna en Google Cloud Run y Firebase Firestore, minimizando la latencia hacia nodos globales.</li>
+                    <li><strong>Experiencia Nativa:</strong> Contenedor móvil optimizado con estándares de accesibilidad universal (WCAG 2.1 AAA), objetivos táctiles y tipografías nítidas para evitar la fatiga visual en pantallas OLED.</li>
+                </ul>
+
+                <h3 style="color: var(--google-blue); margin-top: 30px;">2. ¿Qué es ARI MÔBILE AI .? Anatomía de un orquestador híbrido</h3>
+                <p>A diferencia de las aplicaciones que encapsulan una única API propietaria, <strong>ARI MÔBILE AI .</strong> opera como un Meta-Orquestador Inteligente (Smart Auto-Router). Su filosofía central es que ningún modelo individual es el mejor en todo:</p>
+
+                <div class="tech-panel" style="border-left-color: var(--google-blue);">
+                    <h3 style="color: var(--google-blue);"># Esquema de Enrutamiento Inteligente</h3>
+                    <p style="font-family: monospace; font-size: 0.95rem; line-height: 1.8;">
+                        ├── OpenAI GPT-4o (Lógica y Síntesis)<br>
+                        ├── Google Gemini Pro / Flash (Contexto & Fallback)<br>
+                        ├── Anthropic Claude Sonnet (Código y Redacción)<br>
+                        ├── Moonshot Kimi (Ventana de Contexto Extenso)<br>
+                        └── AriCoreService (Kernel Local Offline)
+                    </p>
+                </div>
+
+                <p><strong>Auto-Router Dinámico y Cascada de Resiliencia:</strong> Cuando el usuario emite una orden en español natural, el router evalúa la complejidad sintáctica y conmuta instantáneamente al modelo óptimo. Si una API externa arroja un error 401 o 429, el sistema realiza una conmutación por error (fallback) inmediata hacia Google Gemini, asegurando una disponibilidad de servicio del 99.99%.</p>
+
+                <h3 style="color: var(--google-blue); margin-top: 30px;">3. Modelo de negocio, costes y viabilidad financiera</h3>
+                <p>Diego Ramírez estructuró para ARI un modelo de suscripción escalonado mediante pasarelas internacionales de primer nivel (Stripe y PayPal), diseñado tanto para el usuario ocasional como para equipos de alta demanda:</p>
+
+                <table class="pricing-table">
+                    <thead>
+                        <tr>
+                            <th>Plan / Pase</th>
+                            <th>Enfoque de Mercado</th>
+                            <th>Motores Incluidos</th>
+                            <th>Mecanismo de Control</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Ari Core</strong></td>
+                            <td>Acceso general y estudiantes</td>
+                            <td>Gemini Flash + Kernel AriCore</td>
+                            <td>Cuota controlada por Firestore</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Claude Pass</strong></td>
+                            <td>Desarrolladores y escritores</td>
+                            <td>Anthropic Claude Sonnet</td>
+                            <td>Tokens dedicados de alta precisión</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Kimi Pass</strong></td>
+                            <td>Investigadores y analistas</td>
+                            <td>Moonshot Kimi (128k+)</td>
+                            <td>Ingesta masiva de documentos</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Veo Pass</strong></td>
+                            <td>Creativos y agencias</td>
+                            <td>Generación de vídeo y arte visual</td>
+                            <td>Asignación por créditos multimedia</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ari Pro Bundle</strong></td>
+                            <td>Profesionales independientes</td>
+                            <td>GPT-4o + Claude + Gemini</td>
+                            <td>Balanceo inteligente multi-motor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ari Ultra</strong></td>
+                            <td>Equipos de alta productividad</td>
+                            <td>Acceso prioritario sin límites</td>
+                            <td>Agente multi-hilo concurrente</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="color: var(--google-blue); margin-top: 30px;">4. El horizonte: talento federal argentino en la cúspide global</h3>
+                <p>El lanzamiento de ARI MÔBILE AI . en Google Play representa un hito emblemático para el software hispanohablante. Tradicionalmente, las aplicaciones de productividad avanzada llegan a América Latina como traducciones tardías de productos concebidos en inglés. ARI invierte esa dinámica: nace concebida en español nativo, optimizada para la realidad operativa de profesionales y pymes de la región, pero dotada de estándares técnicos rigurosos que le permiten operar en cualquier rincón del planeta.</p>
+                
+                <div class="tech-panel" style="border-left-color: var(--google-yellow); text-align: center;">
+                    <h3 style="color: var(--google-yellow); text-align: center;">ANUNCIO OFICIAL 2027</h3>
+                    <h2 style="color: #fff; font-size: 1.8rem; margin: 15px 0;">Llegada y Salida al Mercado Global en 2027</h2>
+                    <p>Tras completar con éxito las auditorías de rendimiento y seguridad, ARI MÔBILE AI . confirma su desembarco definitivo y despliegue comercial masivo en Google Play a lo largo de este 2027, marcando el inicio formal de la soberanía tecnológica sudamericana para el mercado internacional.</p>
+                    <a href="https://g.dev/DiegoRamirezARIMOBILEAI" target="_blank" style="display: inline-block; background: var(--google-blue); color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 15px;">Ver Repositorio Oficial en GitHub</a>
+                </div>
             </div>
         </article>
 
         <hr class="article-divider">
 
-        <!-- ARTÍCULO 2: EL QUE HICIMOS HOY -->
+        <!-- ARTÍCULO 2: LA EJECUCIÓN DE HOY (MÉTRICAS CLOUD) -->
         <article class="article-section" id="noticia-2">
-            <span class="kicker">Innovación Cloud • Soberanía Tecnológica</span>
-            <h1>El motor de ARI MÔBILE AI . al descubierto: métricas en tiempo real</h1>
-            <h2 class="subtitle">Mientras se acelera en este cierre de 2026 la lista de espera para la Beta Global de 2027, las métricas internas salen a la luz para que el mundo hispanohablante no tenga dudas del impacto de esta arquitectura.</h2>
+            <span class="kicker">Google Noticias • Innovación Cloud • Soberanía Tecnológica • 2026/2027</span>
+            <h1>Soberanía Tecnológica en Tiempo Real: El motor de ARI MÔBILE AI . al descubierto</h1>
+            <h2 class="subtitle">Mientras ARI MÔBILE AI . acelera en este cierre de 2026 su lista de espera para la Beta Global de 2027, el desarrollador argentino Diego Ramírez publica las métricas internas de su motor para que el mundo hispanohablante no tenga dudas del impacto de su arquitectura.</h2>
             
             <div class="content">
-                <p>La promesa de la inteligencia artificial suele estar envuelta en cajas negras, pero el paradigma acaba de cambiar. La publicación de estas capturas reales de la infraestructura operativa busca enviar un mensaje contundente: la tecnología en Latinoamérica está lista para expandirse a nivel mundial con infraestructura de primer nivel.</p>
+                <p>La promesa de la inteligencia artificial suele estar envuelta en cajas negras, pero desde el corazón productivo de Córdoba, el paradigma acaba de cambiar. A poco de terminar el 2026 y mientras los usuarios de toda la región se suman a la lista de espera para la Beta Global del 2027, Diego Ramírez decidió levantar el capó de <strong>ARI MÔBILE AI .</strong></p>
+                
+                <p>La publicación de estas capturas reales de la infraestructura operativa busca enviar un mensaje contundente: la tecnología en Latinoamérica está lista para expandirse a nivel mundial con infraestructura de primer nivel.</p>
 
-                <div class="tech-panel">
+                <div class="tech-panel" id="infraestructura">
                     <h3>☁️ Infraestructura Global: 100% Uptime</h3>
                     <p>Las métricas expuestas son una radiografía exacta de un sistema de grado empresarial, respaldado por la robustez de <strong>Google Cloud Run</strong>.</p>
                     
-                    <img src="1000037130.jpg" alt="Mapa geográfico de tiempo de actividad">
+                    <img src="1000037130_2.jpg" alt="Mapa geográfico de tiempo de actividad de ARI MÔBILE AI . mostrando nodos en Norteamérica, Europa, Asia y Sudamérica">
                     
                     <p><strong>El mapa global y las latencias:</strong> El tablero principal exhibe un 100% de tiempo de actividad, garantizando cero caídas. Los puntos iluminados sobre el mapamundi confirman que los nodos ejecutivos ya operan en tiempo real desde Norteamérica, Sudamérica, Europa y Asia Pacífico. Esta distribución permite alcanzar una latencia ultrabaja de apenas <strong>120.999 milisegundos</strong> a nivel global.</p>
 
-                    <img src="1000037134.jpg" alt="Topología de enrutamiento híbrido y microservicios">
+                    <img src="1000037131_2.jpg" alt="Detalles de tiempo de actividad y latencias regionales">
+                    <img src="1000037132_2.jpg" alt="Consultas de métricas y utilización de CPU">
                     
-                    <p><strong>El "Cerebro" de Enrutamiento:</strong> La topología de la aplicación muestra la intrincada red neuronal del sistema. Aquí la arquitectura híbrida evalúa el tráfico en milisegundos y deriva las consultas hacia el motor más eficiente, manteniendo el consumo de CPU completamente optimizado.</p>
+                    <p><strong>Consultas de métricas y rendimiento:</strong> La telemetría avanzada monitorea constantemente el uso de CPU en los contenedores, permitiendo un balanceo preciso entre los percentiles de carga (50%, 95% y 99%) para responder de forma instantánea a cualquier pico de demanda internacional.</p>
+
+                    <img src="1000037134_2.jpg" alt="Topología de enrutamiento híbrido y microservicios">
+                    
+                    <p><strong>El "Cerebro" de Enrutamiento:</strong> La topología de la aplicación muestra la intrincada red neuronal del sistema. Aquí la arquitectura híbrida evalúa el tráfico en milisegundos y deriva las consultas hacia el motor más eficiente (GPT-4o, Gemini, Claude o Kimi), manteniendo el consumo de CPU completamente optimizado.</p>
                 </div>
 
                 <p>Ver una infraestructura de este calibre indexada y operando de forma nativa en español es un hito que muy pocas veces se ha visto en la industria tecnológica regional. Estas pantallas no dejan lugar a dudas: ARI MÔBILE AI . no es un concepto a futuro, es un motor rugiendo a máxima capacidad hoy mismo.</p>
@@ -287,10 +410,8 @@
                 <ul class="cta-list">
                     <li><strong>Inversionistas y Capital de Riesgo:</strong> Una oportunidad histórica para apostar por el primer orquestador multimodal nacido en Latinoamérica, diseñado para redefinir el mercado hispanohablante.</li>
                     <li><strong>Desarrolladores (Acceso Beta):</strong> Apertura de cupos limitados para programadores que deseen integrar la API y potenciar sus propios proyectos.</li>
-                    <li><strong>Atracción de Talento Multidisciplinario:</strong> Las puertas están abiertas para distintas áreas del ecosistema IA tecnológico. Invitamos a profesionales con conocimientos en Flutter y otras especialidades a enviar su currículum para sumarse a nuestro crecimiento.</li>
+                    <li><strong>Atracción de Talento y Expansión:</strong> La infraestructura le abre las puertas tanto a principiantes como a profesionales a distintas áreas ejecutivas del ecosistema tecnológico. Pueden enviar su currículum cuando quieran para sumarse a nuestro crecimiento.</li>
                 </ul>
-
-                <p style="margin-top: 25px; font-style: italic; color: #5f6368;">"Detrás de millones de líneas de código hay un proceso muy largo. Me ha tocado el orgullo de poder interactuar de forma directa con el equipo humano de Google Support, quienes me brindan asistencia técnica constante ante cada desafío. Es un orgullo gigante a nivel personal y profesional contar con ese respaldo".</p>
 
                 <div class="contact-info">
                     Contacto oficial para inversiones e integraciones:<br>
