@@ -1,461 +1,485 @@
+​There is a file you can reference named "index_4.html". Refer to this file by its name verbatim.
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- SEO y Metadatos Oficiales -->
-    <title>ARI MÔBILE AI . | Soberanía Tecnológica e Infraestructura Global</title>
-    <meta name="description" content="Descubrí ARI MÔBILE AI ., el orquestador híbrido multimodal desarrollado por Diego Leonardo Ramírez en Villa María, Córdoba. Integración de OpenAI, Google Gemini, Anthropic Claude, Moonshot Kimi y Google Cloud Run.">
-    <meta name="author" content="Diego Leonardo Ramirez">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://diegiramirez13-arch.github.io/ari-mobile/">
-
-    <!-- Open Graph para Redes Sociales y Compartir sin Advertencias -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://diegiramirez13-arch.github.io/ari-mobile/">
-    <meta property="og:title" content="ARI MÔBILE AI . | Inteligencia Artificial Tricontinental">
-    <meta property="og:description" content="No responda. Ejecuta. El orquestador multi-motor de IA desarrollado en Argentina con respaldo de Google Cloud y arquitectura global.">
-    <meta property="og:image" content="https://diegiramirez13-arch.github.io/ari-mobile/preview.jpg">
-
-    <style>
-        :root {
-            --primary: #1a1a1a;
-            --secondary: #5f6368;
-            --google-blue: #4285F4;
-            --google-red: #EA4335;
-            --google-yellow: #FBBC05;
-            --google-green: #34A853;
-            --bg-color: #f8f9fa;
-            --text-main: #202124;
-        }
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-        }
-        
-        /* Barra de navegación con accesos a los portales internos */
-        .navbar {
-            background-color: #ffffff;
-            border-bottom: 2px solid var(--google-blue);
-            padding: 15px 50px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .nav-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
-            text-decoration: none;
-            letter-spacing: -0.5px;
-        }
-        .nav-brand span { color: var(--google-blue); }
-        .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
-        .nav-links a {
-            text-decoration: none;
-            color: var(--secondary);
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: color 0.2s ease;
-        }
-        .nav-links a:hover { color: var(--google-blue); }
-
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            background: #ffffff;
-            padding: 45px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border: 1px solid #e8eaed;
-            border-top: 5px solid var(--google-red);
-        }
-        
-        .portal-section {
-            margin-bottom: 60px;
-        }
-        
-        .article-divider {
-            border: 0;
-            height: 1px;
-            background: #dadce0;
-            margin: 60px 0;
-        }
-
-        .kicker {
-            color: var(--google-blue);
-            font-weight: 700;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 15px;
-            display: block;
-        }
-        h1 {
-            font-size: 2.3rem;
-            line-height: 1.25;
-            color: var(--primary);
-            margin: 0 0 15px 0;
-            letter-spacing: -0.5px;
-        }
-        .subtitle {
-            font-size: 1.2rem;
-            color: var(--secondary);
-            font-weight: 400;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-        .meta-info {
-            font-size: 0.95rem;
-            color: var(--secondary);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 30px;
-            border-bottom: 1px solid #dadce0;
-            padding-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .meta-info strong { color: var(--primary); }
-        .content p {
-            font-size: 1.12rem;
-            margin-bottom: 20px;
-            color: #3c4043;
-        }
-        .content img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-            margin: 20px 0;
-            border: 1px solid #e8eaed;
-        }
-        
-        /* Panel de Ecosistema e Integraciones */
-        .ecosystem-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 20px;
-            margin: 35px 0;
-        }
-        .ecosystem-card {
-            background: #f8f9fa;
-            border: 1px solid #e8eaed;
-            border-radius: 10px;
-            padding: 20px;
-        }
-        .ecosystem-card h4 {
-            margin-top: 0;
-            color: var(--primary);
-            font-size: 1.1rem;
-            border-bottom: 2px solid var(--google-blue);
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-        }
-        .ecosystem-card ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            font-size: 0.95rem;
-            color: var(--secondary);
-        }
-        .ecosystem-card li { margin-bottom: 8px; }
-
-        /* Estilos para la tabla de precios del artículo original */
-        .pricing-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 30px 0;
-            font-size: 1rem;
-            background: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #e8eaed;
-        }
-        .pricing-table th, .pricing-table td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #e8eaed;
-        }
-        .pricing-table th {
-            background-color: #f1f3f4;
-            color: var(--primary);
-            font-weight: 700;
-        }
-
-        .tech-panel {
-            background-color: #121212;
-            color: #e8eaed;
-            padding: 30px;
-            border-radius: 12px;
-            margin: 40px 0;
-            border: 1px solid #333;
-            border-left: 4px solid var(--google-green);
-        }
-        .tech-panel h3 {
-            color: var(--google-green);
-            margin-top: 0;
-            font-size: 1.5rem;
-            border-bottom: 1px solid #333;
-            padding-bottom: 15px;
-        }
-        .tech-panel img { border: 1px solid #444; width: 100%; height: auto; border-radius: 8px; margin: 20px 0;}
-        .tech-panel p { color: #bdc1c6; font-size: 1.05rem; }
-        
-        .cta-box {
-            background-color: #f4f8fe;
-            border-left: 5px solid var(--google-yellow);
-            padding: 35px;
-            margin-top: 40px;
-            border-radius: 0 8px 8px 0;
-        }
-        .cta-box h2 {
-            margin-top: 0;
-            color: var(--primary);
-            font-size: 1.6rem;
-        }
-        .cta-list {
-            list-style: none;
-            padding: 0;
-            margin: 20px 0;
-        }
-        .cta-list li {
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-            padding-left: 30px;
-            position: relative;
-        }
-        .cta-list li::before {
-            content: '🚀';
-            position: absolute;
-            left: 0;
-            top: 2px;
-        }
-        .contact-info {
-            margin-top: 25px;
-            font-weight: 500;
-            color: var(--primary);
-            font-size: 1.1rem;
-            line-height: 1.8;
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #dcdcdc;
-        }
-        .contact-info a {
-            color: var(--google-blue);
-            text-decoration: none;
-            font-weight: 700;
-        }
-        .contact-info a:hover { text-decoration: underline; }
-        .brand-seal {
-            margin-top: 15px;
-            display: inline-block;
-            background: var(--primary);
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 700;
-        }
-        
-        @media (max-width: 768px) {
-            .navbar { flex-direction: column; padding: 15px; gap: 15px; }
-            .nav-links { justify-content: center; gap: 15px; }
-            h1 { font-size: 1.9rem; }
-            .container { margin: 15px; padding: 20px; }
-            .pricing-table { display: block; overflow-x: auto; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+​<!-- SEO y Metadatos Profesionales -->
+<title>ARI MÔBILE AI . | Soberanía Tecnológica e Infraestructura Global</title>
+<meta name="description" content="Portal oficial de ARI MÔBILE AI ., el orquestador híbrido multimodal desarrollado por Diego Leonardo Ramírez en Villa María, Córdoba. Integración de OpenAI, Google Gemini, Anthropic Claude, Moonshot Kimi y Google Cloud Run.">
+<meta name="author" content="Diego Leonardo Ramirez">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="[https://diegiramirez13-arch.github.io/ari-mobile/](https://diegiramirez13-arch.github.io/ari-mobile/)">
+​<!-- Open Graph / Redes Sociales -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="[https://diegiramirez13-arch.github.io/ari-mobile/](https://diegiramirez13-arch.github.io/ari-mobile/)">
+<meta property="og:title" content="ARI MÔBILE AI . | Inteligencia Artificial Tricontinental">
+<meta property="og:description" content="No responde. Ejecuta. El orquestador multi-motor de IA desarrollado en Argentina con respaldo de Google Cloud Run y arquitectura global.">
+<meta property="og:image" content="[https://diegiramirez13-arch.github.io/ari-mobile/preview.jpg](https://diegiramirez13-arch.github.io/ari-mobile/preview.jpg)">
+<meta property="og:site_name" content="ARI MÔBILE AI .">
+​<style>
+:root {
+--primary: #202124;
+--secondary: #5f6368;
+--google-blue: #1a73e8;
+--google-red: #ea4335;
+--google-yellow: #fbbc04;
+--google-green: #34a853;
+--bg-color: #f8f9fa;
+--border-color: #dadce0;
+}
+​body {
+font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+background-color: var(--bg-color);
+color: var(--primary);
+line-height: 1.6;
+margin: 0;
+padding: 0;
+}
+​/* Barra de Navegación Profesional */
+.gn-header {
+background-color: #ffffff;
+border-bottom: 1px solid var(--border-color);
+padding: 12px 24px;
+position: sticky;
+top: 0;
+z-index: 1000;
+box-shadow: 0 1px 3px rgba(60,64,67,0.08);
+}
+.gn-header-top {
+display: flex;
+justify-content: space-between;
+align-items: center;
+max-width: 1000px;
+margin: 0 auto;
+}
+.gn-logo {
+font-size: 1.4rem;
+font-weight: 700;
+color: var(--primary);
+text-decoration: none;
+letter-spacing: -0.5px;
+}
+.gn-logo span { color: var(--google-blue); }
+.gn-nav {
+display: flex;
+gap: 20px;
+max-width: 1000px;
+margin: 10px auto 0 auto;
+border-top: 1px solid #f1f3f4;
+padding-top: 8px;
+overflow-x: auto;
+}
+.gn-nav a {
+text-decoration: none;
+color: var(--secondary);
+font-weight: 500;
+font-size: 0.9rem;
+white-space: nowrap;
+padding-bottom: 4px;
+}
+.gn-nav a:hover {
+color: var(--google-blue);
+border-bottom: 2px solid var(--google-blue);
+}
+​/* Contenedor Principal */
+.main-container {
+max-width: 900px;
+margin: 30px auto;
+background: #ffffff;
+padding: 40px;
+border-radius: 8px;
+border: 1px solid var(--border-color);
+box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3.1px rgba(60,64,67,0.15);
+}
+​.section-block {
+margin-bottom: 50px;
+}
+​.section-divider {
+border: 0;
+height: 1px;
+background: var(--border-color);
+margin: 50px 0;
+}
+​.badge-kicker {
+background-color: #e8f0fe;
+color: var(--google-blue);
+font-weight: 700;
+font-size: 0.75rem;
+padding: 4px 10px;
+border-radius: 4px;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+display: inline-block;
+margin-bottom: 12px;
+}
+​h1 {
+font-size: 2.2rem;
+line-height: 1.25;
+color: var(--primary);
+margin: 0 0 12px 0;
+letter-spacing: -0.5px;
+}
+​.subtitle {
+font-size: 1.15rem;
+color: var(--secondary);
+font-weight: 400;
+margin-bottom: 20px;
+line-height: 1.5;
+}
+​.byline {
+font-size: 0.9rem;
+color: var(--secondary);
+border-bottom: 1px solid var(--border-color);
+padding-bottom: 15px;
+margin-bottom: 25px;
+display: flex;
+gap: 15px;
+flex-wrap: wrap;
+}
+​.content-body p {
+font-size: 1.08rem;
+margin-bottom: 18px;
+color: #3c4043;
+}
+​.content-body img {
+width: 100%;
+height: auto;
+border-radius: 8px;
+margin: 20px 0;
+border: 1px solid var(--border-color);
+}
+​/* Listas y viñetas limpias sin emoticons */
+.clean-list {
+padding-left: 20px;
+color: #3c4043;
+margin-bottom: 25px;
+}
+.clean-list li {
+margin-bottom: 10px;
+}
+.clean-list li strong {
+color: var(--primary);
+}
+​/* Panel Oscuro Estricto */
+.tech-panel {
+background-color: #121212;
+color: #e8eaed;
+padding: 30px;
+border-radius: 8px;
+margin: 35px 0;
+border: 1px solid #333;
+border-left: 4px solid var(--google-blue);
+}
+.tech-panel h3 {
+color: var(--google-blue);
+margin-top: 0;
+font-size: 1.4rem;
+border-bottom: 1px solid #333;
+padding-bottom: 12px;
+}
+.tech-panel img {
+border: 1px solid #444;
+margin: 15px 0;
+}
+.tech-panel p { color: #bdc1c6; font-size: 1rem; }
+.tech-code {
+font-family: monospace;
+font-size: 0.95rem;
+line-height: 1.8;
+color: #a8c7fa;
+background: #1e1e1e;
+padding: 15px;
+border-radius: 4px;
+margin: 15px 0;
+}
+​/* Tabla de Precios */
+.pricing-table {
+width: 100%;
+border-collapse: collapse;
+margin: 25px 0;
+font-size: 0.95rem;
+background: #ffffff;
+border-radius: 6px;
+overflow: hidden;
+border: 1px solid var(--border-color);
+}
+.pricing-table th, .pricing-table td {
+padding: 12px 15px;
+text-align: left;
+border-bottom: 1px solid var(--border-color);
+}
+.pricing-table th {
+background-color: #f1f3f4;
+color: var(--primary);
+font-weight: 700;
+}
+​/* Documentación y Fuentes */
+.docs-card {
+background: #f8f9fa;
+border: 1px solid var(--border-color);
+border-radius: 8px;
+padding: 24px;
+margin: 30px 0;
+}
+.docs-card h3 {
+margin-top: 0;
+font-size: 1.1rem;
+color: var(--primary);
+border-bottom: 2px solid var(--google-blue);
+padding-bottom: 8px;
+margin-bottom: 16px;
+}
+.docs-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+gap: 15px;
+}
+.doc-item {
+display: flex;
+flex-direction: column;
+font-size: 0.95rem;
+border-left: 2px solid var(--google-blue);
+padding-left: 10px;
+}
+.doc-item strong { color: var(--primary); margin-bottom: 2px; }
+.doc-item a {
+color: var(--google-blue);
+text-decoration: none;
+word-break: break-all;
+font-weight: 500;
+}
+.doc-item a:hover { text-decoration: underline; }
+​/* Convocatoria / Contacto */
+.cta-container {
+background-color: #f8f9fa;
+border: 1px solid var(--border-color);
+border-left: 4px solid var(--google-blue);
+padding: 30px;
+margin-top: 35px;
+border-radius: 4px;
+}
+.cta-container h2 {
+margin-top: 0;
+color: var(--primary);
+font-size: 1.4rem;
+margin-bottom: 15px;
+}
+.seal-badge {
+display: inline-block;
+background: var(--primary);
+color: #ffffff;
+padding: 4px 14px;
+border-radius: 4px;
+font-size: 0.85rem;
+font-weight: 700;
+margin-top: 15px;
+}
+​@media (max-width: 768px) {
+.main-container { padding: 20px; margin: 15px; }
+h1 { font-size: 1.75rem; }
+.pricing-table { display: block; overflow-x: auto; }
+.gn-nav { padding-bottom: 10px; }
+}
+</style>
 </head>
 <body>
+​<!-- Encabezado Fijo -->
+<header class="gn-header">
+<div class="gn-header-top">
+<a href="#" class="gn-logo">Google <span>Noticias</span></a>
+<span style="font-weight: 600; font-size: 0.9rem; color: var(--secondary);">Edición Tecnología</span>
+</div>
+<nav class="gn-nav">
+<a href="#bloque-origen">Origen & Arquitectura</a>
+<a href="#bloque-cloud">Métricas Oficiales</a>
+<a href="#bloque-actualidad">Debate Oxford</a>
+<a href="#bloque-contacto">Convocatoria</a>
+</nav>
+</header>
+​<main class="main-container">
+​<!-- SECCIÓN 1: DE VILLA MARÍA AL MUNDO (EL ORIGEN Y LA TABLA) -->
+<section class="section-block" id="bloque-origen">
+<span class="badge-kicker">INNOVACIÓN • ARGENTINA • 2027</span>
+<h1>De Villa María al mundo: cómo ARI MÔBILE AI . desafía a los gigantes tecnológicos con un orquestador híbrido que ejecuta en lugar de solo chatear</h1>
+<h2 class="subtitle">Diseñada en el corazón productivo de Córdoba por el desarrollador independiente Diego Leonardo Ramírez, esta plataforma unifica los motores más potentes del planeta —GPT-4o, Gemini, Claude y Kimi— en una sola interfaz móvil de alta precisión, anunciando su llegada formal al mercado global en este 2027.</h2>
+​<div class="byline">
+<span>Por <strong>Redacción de Tecnología Global</strong></span>
+<span>•</span>
+<span>Especial para Ecosistemas de IA</span>
+<span>•</span>
+<span>Lectura de 5 min</span>
+</div>
+​<div class="content-body">
+<img src="preview.jpg" alt="ARI MÔBILE AI - Soberanía Argentina">
+​<p>En el mapa contemporáneo de la inteligencia artificial, las noticias suelen emanar de los mismos epicentros de siempre: Silicon Valley, Seattle, Londres o Shenzhen. Sin embargo, las verdaderas revoluciones operativas a menudo nacen en lugares inesperados, impulsadas por ingenieros que eligen resolver problemas de fricción real en lugar de alimentar la burbuja de la conversación vacía.</p>
+​<p>Desde Villa María, una ciudad agroindustrial ubicada en el corazón de la provincia de Córdoba, Argentina, el desarrollador independiente <strong>Diego Ramírez</strong> (perfil verificado en Google Developers) ha completado la auditoría final y el despliegue de <strong>ARI MÔBILE AI .</strong>: un ecosistema móvil que subvierte el paradigma de los chatbots tradicionales para transformarse en un orquestador multi-motor orientado a la acción y la ejecución de flujos de trabajo en tiempo real.</p>
+​<h3 style="color: var(--primary); margin-top: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">1. Orígenes y génesis: la rebelión contra el "chatbot pasivo"</h3>
+<p>Durante los últimos años, el usuario medio de tecnología ha sido bombardeado con interfaces conversacionales que prometían transformar el trabajo. No obstante, la experiencia cotidiana suele toparse con un techo frustrante: si se le pide a un chatbot convencional que redacte un contrato, organice un proyecto y envíe correos, el modelo suele limitarse a generar texto que luego el ser humano debe copiar y trasladar manualmente.</p>
+​<p>Consciente de esta brecha de productividad, Diego Ramírez inició la construcción de ARI con una premisa audaz: la inteligencia artificial no debe ser un interlocutor con el que se charla, sino una infraestructura operativa que ejecute tareas de punta a punta.</p>
+​<ul class="clean-list">
+<li><strong>Kernel Local Offline:</strong> Diseñó un núcleo local de emergencia (AriCoreService) para garantizar procesamiento fuera de línea cuando fallan las redes celulares.</li>
+<li><strong>Cloud Serverless:</strong> Desplegó una arquitectura moderna en Google Cloud Run y Firebase Firestore, minimizando la latencia hacia nodos globales.</li>
+<li><strong>Experiencia Nativa:</strong> Contenedor móvil optimizado con estándares de accesibilidad universal (WCAG 2.1 AAA), objetivos táctiles y tipografías nítidas para evitar la fatiga visual en pantallas OLED.</li>
+</ul>
+​<h3 style="color: var(--primary); margin-top: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">2. Anatomía de un orquestador híbrido</h3>
+<p>A diferencia de las aplicaciones que encapsulan una única API propietaria, <strong>ARI MÔBILE AI .</strong> opera como un Meta-Orquestador Inteligente (Smart Auto-Router). Su filosofía central es que ningún modelo individual es el mejor en todo.</p>
+​<div class="tech-panel">
+<h3>Esquema de Enrutamiento Inteligente</h3>
+<div class="tech-code">
+├── OpenAI GPT-4o (Lógica y Síntesis)
 
-    <!-- Menú superior con accesos directos a los portales internos -->
-    <nav class="navbar">
-        <a href="#" class="nav-brand">ARI MÔBILE <span>AI .</span></a>
-        <div class="nav-links">
-            <a href="#portada-oxford">Actualidad & Debate</a>
-            <a href="#motor-cloud">Infraestructura Cloud</a>
-            <a href="#origen-proyecto">Origen & Precios</a>
-            <a href="#inversores">Inversores & Talento</a>
-        </div>
-    </nav>
+├── Google Gemini Pro / Flash (Contexto & Fallback)
 
-    <div class="container">
-        
-        <!-- SECCIÓN 1 (PRIMERA EN VISUALIZACIÓN): ACTUALIDAD Y DEBATE (OXFORD / CLARÍN / LA NACIÓN) -->
-        <section class="portal-section" id="portada-oxford">
-            <span class="kicker">Google Noticias • Tecnología • Argentina • Debate Global • 2027</span>
-            <h1>Argentina no solo adopta inteligencia artificial: también la desarrolla</h1>
-            <h2 class="subtitle">Diego Leonardo Ramírez, desde Villa María, Córdoba, impulsa ARI MÔBILE AI: una arquitectura independiente de IA híbrida desarrollada en español nativo.</h2>
-            
-            <div class="meta-info">
-                <span>Por <strong>Redacción de Tecnología Global</strong></span>
-                <span>•</span>
-                <span>En respuesta al informe de Oxford y cobertura de La Nación</span>
-                <span>•</span>
-                <span>Sello: <strong>@codigo.nor13</strong></span>
-            </div>
+├── Anthropic Claude Sonnet (Código y Redacción)
 
-            <div class="content">
-                <img src="preview.jpg" alt="ARI MÔBILE AI - Inteligencia Artificial Tricontinental">
-                
-                <p>En medio del debate internacional sobre alfabetización digital y adopción de inteligencia artificial en Argentina a raíz del informe del Reuters Institute de la Universidad de Oxford[span_0](start_span)[span_0](end_span)[span_1](start_span)[span_1](end_span), emerge una realidad de desarrollo tecnológico independiente que demuestra soberanía técnica real[span_2](start_span)[span_2](end_span)[span_3](start_span)[span_3](end_span).</p>
-                
-                <p>Frente al riesgo del consumo pasivo, <strong>ARI MÔBILE AI .</strong> se posiciona como una infraestructura operativa diseñada para ejecutar. Con el respaldo de herramientas de primer nivel y un despliegue riguroso, el proyecto unifica los modelos más avanzados del mundo[span_4](start_span)[span_4](end_span)[span_5](start_span)[span_5](end_span).</p>
+├── Moonshot Kimi (Ventana de Contexto Extenso)
 
-                <!-- Panel de Ecosistema Integrado -->
-                <div class="ecosystem-grid">
-                    <div class="ecosystem-card">
-                        <h4>🤖 Motores Integrados</h4>
-                        <ul>
-                            <li>🔹 <strong>OpenAI</strong> (GPT-4o / Lógica y Síntesis)[span_6](start_span)[span_6](end_span)</li>
-                            <li>🔹 <strong>Google Gemini</strong> (Pro / Flash)[span_7](start_span)[span_7](end_span)</li>
-                            <li>🔹 <strong>Anthropic Claude</strong> (Sonnet / Código)[span_8](start_span)[span_8](end_span)</li>
-                            <li>🔹 <strong>Moonshot AI</strong> (Kimi / Contexto)[span_9](start_span)[span_9](end_span)</li>
-                        </ul>
-                    </div>
-                    <div class="ecosystem-card">
-                        <h4>☁️ Infraestructura Cloud</h4>
-                        <ul>
-                            <li>☁️ <strong>Google Cloud Run</strong> (100% Uptime)[span_10](start_span)[span_10](end_span)</li>
-                            <li>🔥 <strong>Firebase Firestore</strong> (Tiempo real)[span_11](start_span)[span_11](end_span)</li>
-                            <li>🛠️ <strong>Google AI Studio</strong> (Desarrollo)[span_12](start_span)[span_12](end_span)</li>
-                            <li>📦 <strong>GitHub Repositorio</strong> (CI/CD)[span_13](start_span)[span_13](end_span)</li>
-                        </ul>
-                    </div>
-                    <div class="ecosystem-card">
-                        <h4>🛡️ Credenciales & Sello</h4>
-                        <ul>
-                            <li>🏆 <strong>Google Developers</strong> (Verificado)[span_14](start_span)[span_14](end_span)</li>
-                            <li>🎓 <strong>Google Skills</strong> (Credenciales)[span_15](start_span)[span_15](end_span)</li>
-                            <li>💬 <strong>Dev Community</strong> (Global)[span_16](start_span)[span_16](end_span)</li>
-                            <li>🏷️ <strong>Sello @codigo.nor13</strong> (Autoría)[span_17](start_span)[span_17](end_span)[span_18](start_span)[span_18](end_span)</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
+└── AriCoreService (Kernel Local Offline)
+</div>
+</div>
+​<p><strong>Auto-Router Dinámico y Cascada de Resiliencia:</strong> Cuando el usuario emite una orden en español natural, el router evalúa la complejidad sintáctica y conmuta instantáneamente al modelo óptimo. Si una API externa arroja un error 401 o 429, el sistema realiza una conmutación por error (fallback) inmediata hacia Google Gemini, asegurando una disponibilidad de servicio del 99.99%.</p>
+​<h3 style="color: var(--primary); margin-top: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">3. Modelo de negocio y costes</h3>
+<p>El modelo de suscripción fue estructurado mediante pasarelas internacionales, diseñado tanto para el usuario ocasional como para equipos de alta demanda:</p>
+​<table class="pricing-table">
+<thead>
+<tr>
+<th>Plan / Pase</th>
+<th>Enfoque de Mercado</th>
+<th>Motores Incluidos</th>
+<th>Mecanismo de Control</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ari Core</strong></td>
+<td>Acceso general y estudiantes</td>
+<td>Gemini Flash + Kernel AriCore</td>
+<td>Cuota controlada por Firestore</td>
+</tr>
+<tr>
+<td><strong>Claude Pass</strong></td>
+<td>Desarrolladores y escritores</td>
+<td>Anthropic Claude Sonnet</td>
+<td>Tokens dedicados de alta precisión</td>
+</tr>
+<tr>
+<td><strong>Kimi Pass</strong></td>
+<td>Investigadores y analistas</td>
+<td>Moonshot Kimi (128k+)</td>
+<td>Ingesta masiva de documentos</td>
+</tr>
+<tr>
+<td><strong>Veo Pass</strong></td>
+<td>Creativos y agencias</td>
+<td>Generación de vídeo y arte visual</td>
+<td>Asignación por créditos multimedia</td>
+</tr>
+<tr>
+<td><strong>Ari Pro Bundle</strong></td>
+<td>Profesionales independientes</td>
+<td>GPT-4o + Claude + Gemini</td>
+<td>Balanceo inteligente multi-motor</td>
+</tr>
+<tr>
+<td><strong>Ari Ultra</strong></td>
+<td>Equipos de alta productividad</td>
+<td>Acceso prioritario sin límites</td>
+<td>Agente multi-hilo concurrente</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+​<hr class="section-divider">
+​<!-- SECCIÓN 2: MÉTRICAS OFICIALES Y FOTOS CLOUD RUN -->
+<section class="section-block" id="bloque-cloud">
+<span class="badge-kicker">INFRAESTRUCTURA CLOUD • TELEMETRÍA EN VIVO</span>
+<h1>Soberanía Tecnológica en Tiempo Real: El motor de ARI MÔBILE AI . al descubierto</h1>
+<h2 class="subtitle">Con el respaldo de Google Cloud Run, la plataforma expone sus métricas de producción con nodos en cuatro continentes y 100% de tiempo de actividad.</h2>
+​<div class="content-body">
+<p>Rompiendo el hermetismo tradicional de la industria, el orquestador híbrido multimodal revela las métricas en tiempo real de su arquitectura alojada en servidores globales. Estas métricas evidencian la verdadera escala de un desarrollo diseñado para competir internacionalmente.</p>
+​<div class="tech-panel">
+<h3>Infraestructura Global: 100% Uptime</h3>
+<p>Métricas de grado empresarial auditadas en Google Cloud Run:</p>
+​<img src="1000037130_2.jpg" alt="Mapa geográfico de tiempo de actividad y latencias en Google Cloud Run">
+<p><strong>Mapa global y latencias:</strong> El tablero principal confirma un 100% de tiempo de actividad ininterrumpido. A través de una red descentralizada con nodos operativos en Norteamérica, Europa, Asia Pacífico y Sudamérica, el sistema logra una latencia promedio de apenas <strong>120.999 milisegundos</strong>.</p>
+​<img src="1000037131_2.jpg" alt="Detalles de verificaciones de tiempo de actividad por región">
+<img src="1000037132_2.jpg" alt="Consultas de métricas y uso de CPU en contenedores">
+​<p><strong>Rendimiento y Optimización de CPU:</strong> La telemetría en vivo demuestra la estabilidad de los contenedores. Se evidencia un balanceo constante en los percentiles de carga (50%, 95% y 99%), lo que permite absorber picos de demanda masiva sin degradación del servicio.</p>
+​<img src="1000037134_2.jpg" alt="Topología de enrutamiento híbrido y microservicios de ARI Mobile">
+<p><strong>Cerebro de Enrutamiento:</strong> La topología de la aplicación expone la intrincada red de microservicios interconectados. Es en esta capa donde el enrutamiento híbrido decide qué motor ejecutar para cada instrucción, manteniendo la carga completamente optimizada.</p>
+</div>
+</div>
+</section>
+​<hr class="section-divider">
+​<!-- SECCIÓN 3: ACTUALIDAD, EL CASO OXFORD Y LA RESPUESTA -->
+<section class="section-block" id="bloque-actualidad">
+<span class="badge-kicker">TECNOLOGÍA • DEBATE GLOBAL • ACTUALIDAD</span>
+<h1>Argentina no solo adopta inteligencia artificial: también la desarrolla</h1>
+<h2 class="subtitle">En respuesta al diagnóstico internacional, Diego Leonardo Ramírez demuestra la construcción de tecnología propia desde Villa María, Córdoba.</h2>
+​<div class="content-body">
+<img src="1000396182.png" alt="Argentina no solo adopta inteligencia artificial: también la desarrolla">
+​<p>En medio del debate internacional sobre alfabetización digital y adopción de inteligencia artificial en Argentina, emerge una historia de desarrollo tecnológico independiente que exige visibilidad y reescribe la narrativa.</p>
+​<p>Tras conocerse el informe del Reuters Institute de la Universidad de Oxford, que posiciona a Argentina entre los países con mayor utilización semanal de inteligencia artificial generativa, aparece otra dimensión de esta realidad: el desarrollo y la construcción de tecnología propia frente al mero consumo pasivo.</p>
+​<p>Diego Leonardo Ramírez, creador de Código.nor13 y fundador de ARI MÔBILE AI, desarrolla desde Villa María, Córdoba, una plataforma de inteligencia artificial aplicada con una propuesta de arquitectura multimodelo que responde directamente al déficit de infraestructura soberana.</p>
+​<!-- Cuadro de Documentación Oficial -->
+<div class="docs-card">
+<h3>Fuentes y Documentación Pública</h3>
+<div class="docs-grid">
+<div class="doc-item">
+<strong>GitHub – ARI Mobile</strong>
+<a href="[https://github.com/diegiramirez13-arch/ari-mobile](https://github.com/diegiramirez13-arch/ari-mobile)" target="_blank">github.com/.../ari-mobile</a>
+</div>
+<div class="doc-item">
+<strong>Google Developers</strong>
+<a href="[https://developers.google.com/profile/u/118318665485106760646](https://developers.google.com/profile/u/118318665485106760646)" target="_blank">developers.google.com/profile/...</a>
+</div>
+<div class="doc-item">
+<strong>Google Skills</strong>
+<a href="[https://skills.google/public_profiles/15187fd0-1832-46c0-a761-8e14a2d0018e](https://skills.google/public_profiles/15187fd0-1832-46c0-a761-8e14a2d0018e)" target="_blank">skills.google/public_profiles/...</a>
+</div>
+<div class="doc-item">
+<strong>LinkedIn – Diego Ramírez</strong>
+<a href="[https://linkedin.com/in/diego-ramirez-8bb7a52a3](https://linkedin.com/in/diego-ramirez-8bb7a52a3)" target="_blank">linkedin.com/in/diego-ramirez...</a>
+</div>
+<div class="doc-item">
+<strong>Web Oficial – ARI MÔBILE AI</strong>
+<a href="[https://diegiramirez13-arch.github.io/ari-mobile/](https://diegiramirez13-arch.github.io/ari-mobile/)" target="_blank">diegiramirez13-arch.github.io...</a>
+</div>
+</div>
+</div>
+​<blockquote style="border-left: 4px solid var(--google-blue); padding-left: 15px; margin: 25px 0; font-style: italic; color: #5f6368; font-size: 1.1rem;">
+"Argentina no tiene por qué limitarse a consumir el futuro de la inteligencia artificial. También puede participar en su construcción y despliegue arquitectónico."
+</blockquote>
+​<img src="1000396194.png" alt="Integración Multimotor y Beta Global">
+</div>
+</section>
+​<!-- SECCIÓN 4: CONTACTO, INVERSORES Y TALENTO -->
+<section class="section-block" id="bloque-contacto">
+<div class="cta-container">
+<h2>Convocatoria Abierta: Inversión, Beta y Talento</h2>
+<p>Con la infraestructura validada y operativa a través del ecosistema de Google Cloud, ARI MÔBILE AI . abre sus puertas de cara a la Beta Global de 2027:</p>
+​<ul class="clean-list">
+<li><strong>Inversores y Capital de Riesgo:</strong> Oportunidad estratégica para sumarse al desarrollo del primer orquestador multimodal hispanohablante de escala global.</li>
+<li><strong>Acceso a Beta para Desarrolladores:</strong> Apertura de cupos para programadores que deseen integrar la API en sus propios entornos.</li>
+<li><strong>Atracción de Talento:</strong> La infraestructura abre sus puertas tanto a principiantes como a profesionales de distintas áreas ejecutivas del ecosistema tecnológico. Pueden enviar su currículum en cualquier momento.</li>
+</ul>
+​<hr style="border: 0; height: 1px; background: var(--border-color); margin: 25px 0;">
+​<p style="font-size: 1rem; color: var(--primary);">
+<strong>Información de Contacto Institucional:</strong>
 
-        <hr class="article-divider">
 
-        <!-- SECCIÓN 2: MÉTRICAS CLOUD Y CAPTURAS EN TIEMPO REAL -->
-        <section class="portal-section" id="motor-cloud">
-            <span class="kicker">Google Noticias • Innovación Cloud • Soberanía Tecnológica • 2026/2027</span>
-            <h1>Soberanía Tecnológica en Tiempo Real: El motor de ARI MÔBILE AI . al descubierto</h1>
-            <h2 class="subtitle">Mientras ARI MÔBILE AI . acelera en este cierre de 2026 su lista de espera para la Beta Global de 2027, el desarrollador argentino publica las métricas internas de su infraestructura.</h2>
-            
-            <div class="content">
-                <p>Las capturas y métricas del entorno demuestran estabilidad operativa de grado empresarial en Google Cloud Run[span_19](start_span)[span_19](end_span)[span_20](start_span)[span_20](end_span)[span_21](start_span)[span_21](end_span):</p>
+Correo Electrónico: <a href="mailto:arimobile.ai@gmail.com" style="color: var(--google-blue); text-decoration: none; font-weight: bold;">arimobile.ai@gmail.com</a>
 
-                <div class="tech-panel">
-                    <h3>☁️ Infraestructura Global: 100% Uptime</h3>
-                    <p>Telemetría en vivo de los servidores de producción:</p>
-                    
-                    <img src="1000037130_2.jpg" alt="Mapa geográfico de tiempo de actividad de ARI MÔBILE AI">
-                    <p><strong>El mapa global y las latencias:</strong> El tablero principal exhibe un 100% de tiempo de actividad[span_22](start_span)[span_22](end_span), con nodos en cuatro continentes y una latencia ultrabaja de <strong>120.999 ms</strong>[span_23](start_span)[span_23](end_span).</p>
+Teléfono Directo: <strong>+54 353 4408710</strong>
 
-                    <img src="1000037131_2.jpg" alt="Detalles de uptime regional">
-                    <img src="1000037132_2.jpg" alt="Monitoreo de CPU y percentiles de carga">
-                    <p><strong>Telemetría y Rendimiento:</strong> Monitoreo constante del uso de CPU en contenedores[span_24](start_span)[span_24](end_span), optimizando percentiles de carga (50%, 95% y 99%)[span_25](start_span)[span_25](end_span).</p>
+Redes Sociales Oficiales: <strong>@arimobile.ai</strong>
 
-                    <img src="1000037134_2.jpg" alt="Topología de enrutamiento híbrido">
-                    <p><strong>El "Cerebro" de Enrutamiento:</strong> La topología de la aplicación muestra la red neuronal que evalúa el tráfico en milisegundos[span_26](start_span)[span_26](end_span).</p>
-                </div>
-            </div>
-        </section>
-
-        <hr class="article-divider">
-
-        <!-- SECCIÓN 3: EL ARTÍCULO ORIGINAL DE AYER (ORIGEN, ESQUEMA Y TABLA DE PRECIOS) -->
-        <section class="portal-section" id="origen-proyecto">
-            <span class="kicker">Google Noticias • Tecnología • Argentina • Innovación • 2027</span>
-            <h1>De Villa María al mundo: cómo ARI MÔBILE AI . desafía a los gigantes tecnológicos con un orquestador híbrido que ejecuta en lugar de solo chatear</h1>
-            <h2 class="subtitle">Diseñada en el corazón productivo de Córdoba por el desarrollador independiente Diego Leonardo Ramírez, esta plataforma unifica los motores más potentes del planeta en una sola interfaz móvil.</h2>
-            
-            <div class="content">
-                <p>En el mapa contemporáneo de la inteligencia artificial, las verdaderas revoluciones operativas a menudo nacen en lugares inesperados[span_27](start_span)[span_27](end_span), impulsadas por ingenieros que eligen resolver problemas de fricción real en lugar de alimentar la burbuja de la conversación vacía[span_28](start_span)[span_28](end_span).</p>
-                
-                <p>Desde Villa María, Córdoba, Diego Leonardo Ramírez ha completado la auditoría final y el despliegue de <strong>ARI MÔBILE AI .</strong>: un ecosistema móvil que subvierte el paradigma de los chatbots tradicionales para transformarse en un orquestador multi-motor orientado a la acción[span_29](start_span)[span_29](end_span).</p>
-
-                <h3 style="color: var(--google-blue); margin-top: 30px;">1. Orígenes y génesis: la rebelión contra el "chatbot pasivo"</h3>
-                <p>Consciente de la brecha de productividad de los chatbots convencionales, Diego Ramírez construyó ARI con una premisa audaz: la inteligencia artificial no debe ser un interlocutor con el que se charla, sino una infraestructura operativa que ejecute tareas de punta a punta[span_30](start_span)[span_30](end_span).</p>
-                
-                <ul style="margin-bottom: 25px; padding-left: 20px; color: #3c4043;">
-                    <li style="margin-bottom: 10px;"><strong>Kernel Local Offline:</strong> Núcleo local de emergencia (AriCoreService) para procesamiento sin conexión[span_31](start_span)[span_31](end_span).</li>
-                    <li style="margin-bottom: 10px;"><strong>Cloud Serverless:</strong> Arquitectura moderna en Google Cloud Run y Firebase Firestore[span_32](start_span)[span_32](end_span).</li>
-                    <li><strong>Experiencia Nativa:</strong> Contenedor móvil optimizado con estándares WCAG 2.1 AAA para pantallas OLED[span_33](start_span)[span_33](end_span).</li>
-                </ul>
-
-                <h3 style="color: var(--google-blue); margin-top: 30px;">2. Anatomía de un orquestador híbrido</h3>
-                <p>Ningún modelo individual es el mejor en todo[span_34](start_span)[span_34](end_span). El Smart Auto-Router interconecta[span_35](start_span)[span_35](end_span):</p>
-
-                <div class="tech-panel" style="border-left-color: var(--google-blue);">
-                    <h3 style="color: var(--google-blue);"># Esquema de Enrutamiento Inteligente</h3>
-                    <p style="font-family: monospace; font-size: 0.95rem; line-height: 1.8;">
-                        ├── OpenAI GPT-4o (Lógica y Síntesis)<br>
-                        ├── Google Gemini Pro / Flash (Contexto & Fallback)<br>
-                        ├── Anthropic Claude Sonnet (Código y Redacción)<br>
-                        ├── Moonshot Kimi (Ventana de Contexto Extenso)<br>
-                        └── AriCoreService (Kernel Local Offline)
-                    </p>
-                </div>
-
-                <h3 style="color: var(--google-blue); margin-top: 30px;">3. Modelo de negocio y costes</h3>
-                <table class="pricing-table">
-                    <thead>
-                        <tr>
-                            <th>Plan / Pase</th>
-                            <th>Enfoque de Mercado</th>
-                            <th>Motores Incluidos</th>
-                            <th>Control</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><strong>Ari Core</strong></td><td>Estudiantes</td><td>Gemini Flash + AriCore</td><td>Firestore</td></tr>
-                        <tr><td><strong>Claude Pass</strong></td><td>Desarrolladores</td><td>Claude Sonnet</td><td>Tokens dedicados</td></tr>
-                        <tr><td><strong>Kimi Pass</strong></td><td>Investigadores</td><td>Moonshot Kimi</td><td>Ingesta masiva</td></tr>
-                        <tr><td><strong>Veo Pass</strong></td><td>Creativos</td><td>Vídeo y arte visual</td><td>Créditos</td></tr>
-                        <tr><td><strong>Ari Pro Bundle</strong></td><td>Profesionales</td><td>GPT-4o + Claude + Gemini</td><td>Balanceo multi-motor</td></tr>
-                        <tr><td><strong>Ari Ultra</strong></td><td>Alta productividad</td><td>Sin límites</td><td>Concurrencia total</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- SECCIÓN DE CONVOCATORIA E INVERSORES -->
-            <div class="cta-box" id="inversores">
-                <h2>El llamado a la expansión regional y el ecosistema</h2>
-                <p>Con la validación técnica superada y el respaldo de Google Cloud, ARI MÔBILE AI . abre formalmente sus puertas para escalar de cara al 2027:</p>
-                
-                <ul class="cta-list">
-                    <li><strong>Inversionistas y Capital de Riesgo:</strong> Una oportunidad histórica para apostar por el primer orquestador multimodal nacido en Latinoamérica.</li>
-                    <li><strong>Desarrolladores (Acceso Beta):</strong> Apertura de cupos limitados para programadores que deseen integrar la API.</li>
-                    <li><strong>Atracción de Talento y Expansión:</strong> La infraestructura le abre las puertas tanto a principiantes como a profesionales a distintas áreas ejecutivas del ecosistema tecnológico. Pueden enviar su currículum cuando quieran.</li>
-                </ul>
-
-                <div class="contact-info">
-                    <strong>Canales Oficiales y Enlaces Públicos de Verificación:</strong><br>
-                    🌐 Web Oficial: <a href="https://diegiramirez13-arch.github.io/ari-mobile/" target="_blank">ari-mobile repository web</a>[span_36](start_span)[span_36](end_span)[span_37](start_span)[span_37](end_span)<br>
-                    🐙 Repositorio GitHub: <a href="https://github.com/diegiramirez13-arch/ari-mobile" target="_blank">github.com/diegiramirez13-arch/ari-mobile</a>[span_38](start_span)[span_38](end_span)[span_39](start_span)[span_39](end_span)<br>
-                    🏆 Google Developers: <a href="https://developers.google.com/profile/u/118318665485106760646" target="_blank">Perfil Público Verificado</a>[span_40](start_span)[span_40](end_span)[span_41](start_span)[span_41](end_span)<br>
-                    🎓 Google Skills: <a href="https://skills.google/public_profiles/15187fd0-1832-46c0-a761-8e14a2d0018e" target="_blank">Perfil Académico</a>[span_42](start_span)[span_42](end_span)<br>
-                    💼 LinkedIn: <a href="https://linkedin.com/in/diego-ramirez-8bb7a52a3" target="_blank">Diego Ramírez</a>[span_43](start_span)[span_43](end_span)<br>
-                    📧 Correo Directo: <a href="mailto:arimobile.ai@gmail.com">arimobile.ai@gmail.com</a> | Teléfono: +54 353 4408710[span_44](start_span)[span_44](end_span)[span_45](start_span)[span_45](end_span)<br>
-                    📱 Redes Sociales (Instagram, TikTok, YouTube): <a href="#">@arimobile.ai</a>[span_46](start_span)[span_46](end_span)[span_47](start_span)[span_47](end_span)<br>
-                    <div class="brand-seal">Sello @codigo.nor13</div>
-                </div>
-            </div>
-        </section>
-
-    </div>
-
-</body>
+</p>
+<div class="seal-badge">Sello @codigo.nor13</div>
+</div>
+</section>
+​</main>
+​</body>
 </html>
